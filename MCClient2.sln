@@ -1,0 +1,35 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31911.196
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MCClient2", "MCClient2\MCClient2.csproj", "{14A491E0-015B-4109-AEC6-087D536AF361}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MCClient2.Tests", "MCClient2.Tests\MCClient2.Tests.csproj", "{4FF7176D-0AA7-4F14-A517-94AC7838BF88}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{14A491E0-015B-4109-AEC6-087D536AF361}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{14A491E0-015B-4109-AEC6-087D536AF361}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{14A491E0-015B-4109-AEC6-087D536AF361}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{14A491E0-015B-4109-AEC6-087D536AF361}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4FF7176D-0AA7-4F14-A517-94AC7838BF88}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4FF7176D-0AA7-4F14-A517-94AC7838BF88}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4FF7176D-0AA7-4F14-A517-94AC7838BF88}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4FF7176D-0AA7-4F14-A517-94AC7838BF88}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {6F7539B8-63A6-4289-8448-88D3953A7BD0}
+	EndGlobalSection
+	GlobalSection(SubversionScc) = preSolution
+		Svn-Managed = True
+		Manager = AnkhSVN2019 - Subversion Support for Visual Studio
+	EndGlobalSection
+EndGlobal

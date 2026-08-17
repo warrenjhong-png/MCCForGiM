@@ -1,0 +1,1 @@
+{"filters":[4],"kernel_size":[7],"activation":"selu","pool_size":[8],"epoch":[10000],"learning rate":[0.008],"patience":[300],"batch":[32],"dropout":[0.2],"moment":[0.6],"tune_frequency":[1],"model_frequency":[1],"virtual_cassette":[25],"DMW_switch":[0]}

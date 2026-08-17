@@ -1,0 +1,824 @@
+﻿
+
+<link rel="stylesheet" href="~/Content/kendo/2019.3.1023/kendo.default.min.css">
+<link rel="stylesheet" href="~/Content/kendo/2019.3.1023/kendo.common.min.css">
+
+@section scripts {
+    <script>
+        $(document).ready(function () {
+            AvmPage.Main();
+        });
+    </script>
+}
+
+<div id="divVue">
+    <div class="row">
+        <div class="guide col-md-2">
+            <ul>
+                <li class="setp-working">
+                    <div>1. Data Collection</div>
+                    <div>Combination Selection </div>
+                </li>
+                <li>
+                    <div>2. Data Collection</div>
+                    <div>Variable Selection</div>
+                </li>
+                <li>
+                    <div>3. Raw Data</div>
+                    <div>Preprocessing</div>
+                </li>
+                <li>
+                    <div>4. Parameter</div>
+                    <div>Setting</div>
+                </li>
+            </ul>
+            <div>Task ID:</div>
+            <div>{{taskId}}</div>
+            <div class="modelProcessInfo">
+                <span>Model : {{info}}</span>
+                <div style="display:none">
+                    <button v-on:click="loopBuildModel('loop')">Loop</button>
+                    <button v-on:click="loopBuildModel('break')">Next break</button>
+                    <div>Loop Count : {{loopCount}}</div>
+                </div>
+            </div>
+
+
+
+        </div>
+        <div class="selection col-lg-10">
+            <div class="selection-work">
+                <div class="combination-selection" v-show="avmItemPage==0">
+                    <div class="date-grid row">
+                        <div class="col-lg-6">
+                            <div class="setting-title">Time Period</div>
+                            <div class="setting-body" style="min-height:75px;padding-top:15px;">
+                                <label for="data-start">Start Time:<input class="date-start"></label>
+                                <label for="data-end">End Time:<input class="date-end"></label>
+                                <button class="btn btn-primary click-query-btn" v-on:click="clickQuery">Query</button>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="setting-title">Piece Count</div>
+                            <div class="setting-body text-center">
+                                @*因資料量多不提供選擇*@
+                                @*<div class="setting-body text-center" v-on:click="pieceSelect" style="cursor:pointer">*@
+                                <h2>{{pieceCount}}</h2>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary get-piece-btn"
+                                v-on:click="getPieceCount">
+                            Get Piece
+                        </button>
+                    </div>
+                    <div class="fab-grid row">
+
+                    </div>
+                    <div class="piece-select-window" v-show="pieceWindow">
+                        <div class="piece-grid">
+                        </div>
+                        <div class="piece-setting">
+                            <button class="piece-close-btn btn btn-danger">Close</button>
+                            <button class="piece-setting-btn btn btn-primary" v-on:click="pieceSetting">Set</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="variable-selection" v-show="avmItemPage==1">
+                    <div class="count-grid row">
+                        <div class="col-lg-9">
+                            <div class="setting-title">Input Count</div>
+                            <div class="setting-body text-center">
+                                <h2>{{inputCount}}</h2>
+                            </div>
+                            <div class="variables-process-grid row">
+                            </div>
+                        </div>
+                        <div class="col-lg-3">
+                            <div class="setting-title">Output Count</div>
+                            <div class="setting-body text-center">
+                                <h2>{{outputCount}}</h2>
+                            </div>
+                            <div class="variables-metrology-grid row">
+                            </div>
+                        </div>
+                    </div>
+                    @*<div class="variables-grid row">
+
+                        </div>*@
+                </div>
+                <div class="rawdata-prerocessing" v-show="avmItemPage==2">
+                    <div class="rawdata-variable-grid row">
+                        <div class="col-lg-3">
+                            <div class="setting-title">Variable Groups</div>
+                            <div class="variableGroups-grid" style="height:30vh;"></div>
+                        </div>
+                        <div class="col-lg-3">
+                            <div class="setting-title">Variables</div>
+                            <div class="variablesName-grid" style="height:30vh;"></div>
+                        </div>
+                        <div class="col-lg-2" style="display:none;">
+                            <div class="setting-title">Chart Option</div>
+                            <div class="stepId-grid" style="height:30vh;"></div>
+                        </div>
+                        <div class="col-lg-2" style="display:none;">
+                            <div class="setting-title">Algorithms</div>
+                            <div class="algorithms-grid" style="height:30vh;"></div>
+                        </div>
+                        <div class="col-lg-2" style="display:none;">
+                            <div class="spec-grid">
+                                <ul>
+                                    <li><label for="usl">USL : <input class="usl" v-model="usl" disabled></label></li>
+                                    <li><label for="lsl">LSL : <input class="lsl" v-model="lsl" disabled></label></li>
+                                    <li>
+                                        <div class="spec-arrow" v-on:click="specSetting">► setting</div>
+                                        <div class="spec-setting">
+                                            <ul>
+                                                <li><input type="checkbox" class="specManual" v-model="specManual" v-on:click="specCheck('specManual')"><label for="specManual">By Manual</label></li>
+                                                <li>
+                                                    <input type="checkbox" class="specSigma" v-model="specSigma" v-on:click="specCheck('specSigma')">
+                                                    <label for="specSigma">By <input style="width:40px" v-model="specSigmaValue"> x sigma</label>
+                                                </li>
+                                                <li>
+                                                    <input type="checkbox" class="specPercentage" v-model="specPercentage" v-on:click="specCheck('specPercentage')">
+                                                    <label for="specPercentage">By <input style="width:40px" v-model="specPercentageValue"> x Percentage</label>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </li>
+
+                                    <li><label for="ucl">UCL : <input class="ucl" v-model="ucl" disabled></label></li>
+                                    <li><label for="lcl">LCL : <input class="lcl" v-model="lcl" disabled></label></li>
+                                    <li>
+                                        <div class="spec-arrow" v-on:click="conSetting">► setting</div>
+                                        <div class="con-setting">
+                                            <ul>
+                                                <li><input type="checkbox" class="conManual" v-model="conManual" v-on:click="conCheck('conManual')"><label for="conManual">By Manual</label></li>
+                                                <li>
+                                                    <input type="checkbox" class="conSigma" v-model="conSigma" v-on:click="conCheck('conSigma')">
+                                                    <label for="conSigma">By <input style="width:40px" v-model="conSigmaValue"> x sigma</label>
+                                                </li>
+                                                <li>
+                                                    <input type="checkbox" class="conPercentage" v-model="conPercentage" v-on:click="conCheck('conPercentage')">
+                                                    <label for="conPercentage">By <input style="width:40px" v-model="conPercentageValue"> x Percentage</label>
+                                                </li>
+
+                                            </ul>
+                                        </div>
+                                    </li>
+                                    <li class="row">
+                                        <button class="btn btn-primary col-lg-5" style="margin:5px;display:none;" v-on:click="temporalDataChart">Raw Data</button>
+                                        @*<button class="btn btn-primary col-lg-5" style="margin:5px;display:none;" v-on:click="specComputed">Spec</button>*@
+                                        @*<button class="btn btn-primary col-lg-5" style="margin:5px;" v-on:click="addRule">Add Rule</button>*@
+                                        <img class="warning-icon" v-show="warningImg" src="~/Img/warning-icon.svg">
+                                        <button class="btn btn-warning col-lg-5" style="margin:5px;" v-on:click="warningId">Warning ID </button>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="warning-id-window" v-show="warningWindow">
+                                <div class="warning-grid">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-2 position-relative" style="height:34vh;">
+                            <button class="btn btn-primary add-rule-btn"
+                                    v-on:click="addRuleForEnergyPrediction">
+                                Add Rule
+                            </button>
+                        </div>
+                    </div>
+                    <div class="temporaldata-grid row" style="display:none;">
+                        <div class="col-lg-12">
+                            <div class="setting-title">Temporal Data Chart</div>
+                            <div class="temporaldata-chart" style="height:32.5vh" v-show="temporalData"></div>
+                            <div class="load-preset" style="height:32.5vh" v-show="preset"><p>File Loading...</p></div>
+                            <div class="temporaldata-toolbar">
+                                <span><label for="limit">Limit <input class="limit" type="checkbox" v-model="limitCheckBox"></label></span>
+                                <span><label for="trimBegin">Trim Begin : {{trimBeginSet}} <input class="trimBegin" v-model="inputBegin"></label></span>
+                                <span><label for="trimEnd">Trim End : {{trimEndSet}} <input class="trimEnd" v-model="trimEnd"></label></span>
+                                <button class="btn btn-primary" v-on:click="trim">Trim</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="indicator-rule-grid row">
+                        <div class="col-lg-12">
+                            <div class="setting-title">Indicator Rule</div>
+                            <div class="rule-grid" style="height:33.5vh;"></div>
+                        </div>
+                    </div>
+                    <div class="indicator-rule-chart row" style="display:none;">
+                        <div class="col-lg-12">
+                            <div class="setting-title">Indicator Rule Chart</div>
+                            <div class="rule-chart" style="height:32.5vh"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="parameter-layout" v-show="avmItemPage==3">
+
+                    <!-- LEFT：Energy -->
+                    <div class="param-card energy-card">
+
+                        <div class="setting-title">Energy Prediction Model</div>
+
+                        <div class="param-card-body">
+
+                            <!-- Training -->
+                            <div class="param-section">
+                                <div class="section-title">Training</div>
+                                <div class="param-row"><label>num_epoches</label><input v-model="num_epoches"><span>Epochs</span></div>
+                                <div class="param-row"><label>patience</label><input v-model="patience"><span>Epochs</span></div>
+                                <div class="param-row"><label>scheduler_patience</label><input v-model="scheduler_patience"><span>Epochs</span></div>
+                                <div class="param-row"><label>model_set_proportion</label><input v-model="model_set_proportion"></div>
+                                <div class="param-row"><label>threshold_scaler</label><input v-model="threshold_scaler"></div>
+                                <div class="param-row"><label>split</label><input v-model="split"><span>%</span></div>
+                                <div class="param-row"><label>seq_len</label><input v-model="seq_len"><span>Time Steps</span></div>
+                                <div class="param-row"><label>forecasting_len</label><input v-model="forecasting_len"><span>Time Steps</span></div>
+                            </div>
+
+                            <!-- Fine Tune -->
+                            <div class="param-section">
+                                <div class="section-title">Fine Tune</div>
+
+                                <div class="param-row"><label>finetune_time_max</label><input v-model="finetune_time_max"><span>分鐘</span></div>
+                                <div class="param-row"><label>fine_tune_split</label><input v-model="fine_tune_split"><span>%</span></div>
+                                <div class="param-row"><label>fine_tune_len</label><input v-model="fine_tune_len"><span>Samples</span></div>
+                                <div class="param-row"><label>fine_tune_lr_m1</label><input v-model="fine_tune_lr_m1"><span>LR</span></div>
+                                <div class="param-row"><label>fine_tune_lr_m2</label><input v-model="fine_tune_lr_m2"><span>LR</span></div>
+                                <div class="param-row"><label>fine_tune_lr_gsi</label><input v-model="fine_tune_lr_gsi"><span>LR</span></div>
+                            </div>
+
+                            <!-- Search -->
+                            <div class="param-section">
+                                <div class="section-title">Search</div>
+
+                                <div class="param-row"><label>n_trials</label><input v-model="n_trials"><span>Trials</span></div>
+                                <div class="param-row"><label>num_epoches_search</label><input v-model="num_epoches_search"><span>Epochs</span></div>
+
+                                <!-- param_grid.hidden_size -->
+                                <div class="param-row">
+                                    <label>param_grid.hidden_size</label>
+                                    <div class="param-array">
+                                        <div v-for="(v,i) in param_grid_hidden_size" :key="i" class="array-item">
+                                            <input v-model.number="param_grid_hidden_size[i]">
+                                            <button v-on:click="param_grid_hidden_size.splice(i,1)">x</button>
+                                        </div>
+                                        <button v-on:click="param_grid_hidden_size.push(0)">+</button>
+                                    </div>
+                                </div>
+
+                                <!-- param_grid.num_layers -->
+                                <div class="param-row">
+                                    <label>param_grid.num_layers</label>
+                                    <div class="param-array">
+                                        <div v-for="(v,i) in param_grid_num_layers" :key="i" class="array-item">
+                                            <input v-model.number="param_grid_num_layers[i]">
+                                            <button v-on:click="param_grid_num_layers.splice(i,1)">x</button>
+                                        </div>
+                                        <button v-on:click="param_grid_num_layers.push(1)">+</button>
+                                    </div>
+                                </div>
+
+                                <!-- param_grid.lr -->
+                                <div class="param-row">
+                                    <label>param_grid.lr</label>
+                                    <div class="param-array">
+                                        <div v-for="(v,i) in param_grid_lr" :key="i" class="array-item">
+                                            <input v-model.number="param_grid_lr[i]">
+                                            <button v-on:click="param_grid_lr.splice(i,1)">x</button>
+                                        </div>
+                                        <button v-on:click="param_grid_lr.push(0.001)">+</button>
+                                    </div>
+                                    <span>LR</span>
+                                </div>
+
+                                <!-- param_grid.batch_size -->
+                                <div class="param-row">
+                                    <label>param_grid.batch_size</label>
+                                    <div class="param-array">
+                                        <div v-for="(v,i) in param_grid_batch_size" :key="i" class="array-item">
+                                            <input v-model.number="param_grid_batch_size[i]">
+                                            <button v-on:click="param_grid_batch_size.splice(i,1)">x</button>
+                                        </div>
+                                        <button v-on:click="param_grid_batch_size.push(256)">+</button>
+                                    </div>
+                                </div>
+
+                                <!-- gsi_param_grid -->
+                                <div class="param-row">
+                                    <label>gsi_param_grid.hidden_size</label>
+                                    <div class="param-array">
+                                        <div v-for="(v,i) in gsi_param_grid_hidden_size" :key="i" class="array-item">
+                                            <input v-model.number="gsi_param_grid_hidden_size[i]">
+                                            <button v-on:click="gsi_param_grid_hidden_size.splice(i,1)">x</button>
+                                        </div>
+                                        <button v-on:click="gsi_param_grid_hidden_size.push(64)">+</button>
+                                    </div>
+                                </div>
+
+                                <div class="param-row">
+                                    <label>gsi_param_grid.latend_dim</label>
+                                    <div class="param-array">
+                                        <div v-for="(v,i) in gsi_param_grid_latend_dim" :key="i" class="array-item">
+                                            <input v-model.number="gsi_param_grid_latend_dim[i]">
+                                            <button v-on:click="gsi_param_grid_latend_dim.splice(i,1)">x</button>
+                                        </div>
+                                        <button v-on:click="gsi_param_grid_latend_dim.push(3)">+</button>
+                                    </div>
+                                </div>
+
+                                <div class="param-row">
+                                    <label>gsi_param_grid.dropout</label>
+                                    <div class="param-array">
+                                        <div v-for="(v,i) in gsi_param_grid_dropout" :key="i" class="array-item">
+                                            <input v-model.number="gsi_param_grid_dropout[i]">
+                                            <button v-on:click="gsi_param_grid_dropout.splice(i,1)">x</button>
+                                        </div>
+                                        <button v-on:click="gsi_param_grid_dropout.push(0.1)">+</button>
+                                    </div>
+                                </div>
+
+                                <div class="param-row">
+                                    <label>gsi_param_grid.lr</label>
+                                    <div class="param-array">
+                                        <div v-for="(v,i) in gsi_param_grid_lr" :key="i" class="array-item">
+                                            <input v-model.number="gsi_param_grid_lr[i]">
+                                            <button v-on:click="gsi_param_grid_lr.splice(i,1)">x</button>
+                                        </div>
+                                        <button v-on:click="gsi_param_grid_lr.push(0.001)">+</button>
+                                    </div>
+                                    <span>LR</span>
+                                </div>
+
+                                <div class="param-row">
+                                    <label>gsi_param_grid.BATCH_SIZE</label>
+                                    <div class="param-array">
+                                        <div v-for="(v,i) in gsi_param_grid_batch_size" :key="i" class="array-item">
+                                            <input v-model.number="gsi_param_grid_batch_size[i]">
+                                            <button v-on:click="gsi_param_grid_batch_size.splice(i,1)">x</button>
+                                        </div>
+                                        <button v-on:click="gsi_param_grid_batch_size.push(64)">+</button>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- RIGHT -->
+                    <div class="right-panel">
+
+                        <!-- Scheduling -->
+                        <div class="param-card">
+                            <div class="setting-title">Production Scheduling</div>
+                            <div class="param-card-body">
+                                <label>
+                                    <input type="checkbox" v-model="form.exportScheduling" />
+                                    輸出 Scheduling JSON
+                                </label>
+                                <div class="param-row"><label>pop</label><input v-model.number="nsga_pop"></div>
+                                <div class="param-row"><label>gen</label><input v-model.number="nsga_gen"></div>
+                                <div class="param-row"><label>cxpb</label><input v-model.number="nsga_cxpb"></div>
+                                <div class="param-row"><label>mutpb</label><input v-model.number="nsga_mutpb"></div>
+                                <div class="param-row"><label>assign_indpb</label><input v-model.number="nsga_assign_indpb"></div>
+                                <div class="param-row"><label>perm_indpb</label><input v-model.number="nsga_perm_indpb"></div>
+                                <div class="param-row"><label>seed</label><input v-model.number="nsga_seed"></div>
+
+                                <div class="param-row"><label>batch_size</label><input v-model.number="schedule_batch_size"></div>
+                                <div class="param-row"><label>setup</label><input v-model.number="schedule_setup"><span>秒</span></div>
+                                <div class="param-row"><label>setup_value_per</label><input v-model.number="schedule_setup_value"></div>
+                                <div class="param-row"><label>intra_rule</label><input v-model="schedule_intra_rule"></div>
+
+                                <div class="param-row"><label>n_jobs</label><input v-model.number="system_n_jobs"></div>
+                                <div class="param-row"><label>schedule_fmt</label><input v-model="system_schedule_fmt"></div>
+                                <div class="param-row">
+                                    <label>write_outputs</label>
+                                    <select v-model="system_write_outputs">
+                                        <option :value="true">True</option>
+                                        <option :value="false">False</option>
+                                    </select>
+                                </div>
+
+                            </div>
+                        </div>
+
+                        <!-- Facility -->
+                        <div class="param-card">
+                            <div class="setting-title">Facility Config</div>
+
+                            <div class="param-card-body">
+                                <label>
+                                    <input type="checkbox" v-model="form.exportFacility" />
+                                    輸出 Facility JSON
+                                </label>
+                                <div class="param-row">
+                                    <label>設備選擇</label>
+                                    <select v-model="selectedDevice">
+                                        <option value="air">Air Compressor</option>
+                                        <option value="chiller">Chiller</option>
+                                    </select>
+                                </div>
+
+                                <template v-if="selectedDevice === 'air'">
+                                    <div class="param-row"><label>OVER_BUDGET_PENALTY</label><input v-model.number="air_over_budget_penalty"></div>
+                                    <div class="param-row"><label>FLOW_PENALTY</label><input v-model.number="air_flow_penalty"></div>
+                                    <div class="param-row"><label>n_fixed_input</label><input v-model.number="air_n_fixed_input"></div>
+                                    <div class="param-row"><label>n_vfd_input</label><input v-model.number="air_n_vfd_input"></div>
+                                    <div class="param-row"><label>FIXED_AIR_KW</label><input v-model.number="air_fixed_air_kw"><span>kW</span></div>
+                                    <div class="param-row"><label>FIXED_AIR_FLOW</label><input v-model.number="air_fixed_air_flow"></div>
+                                    <div class="param-row"><label>FLOW_CORRECTION</label><input v-model.number="air_flow_correction"></div>
+                                    <div class="param-row"><label>BUDGET_CORRECTION</label><input v-model.number="air_budget_correction"></div>
+                                    <div class="param-row"><label>USAGE_CORRECTION</label><input v-model.number="air_usage_correction"></div>
+                                    <div class="param-row"><label>SWARMSIZE</label><input v-model.number="air_swarmsize"></div>
+                                    <div class="param-row"><label>MAXITER</label><input v-model.number="air_maxiter"></div>
+                                </template>
+
+                                <template v-else>
+                                    <div class="param-row"><label>OVER_BUDGET_PENALTY</label><input v-model.number="chiller_over_budget_penalty"></div>
+                                    <div class="param-row"><label>FLOW_PENALTY</label><input v-model.number="chiller_flow_penalty"></div>
+                                    <div class="param-row"><label>CHILLER_COP</label><input v-model.number="chiller_cop"></div>
+                                    <div class="param-row"><label>FLOW_CORRECTION</label><input v-model.number="chiller_flow_correction"></div>
+                                    <div class="param-row"><label>BUDGET_CORRECTION</label><input v-model.number="chiller_budget_correction"></div>
+                                    <div class="param-row"><label>USAGE_CORRECTION</label><input v-model.number="chiller_usage_correction"></div>
+                                    <div class="param-row"><label>SWARMSIZE</label><input v-model.number="chiller_swarmsize"></div>
+                                    <div class="param-row"><label>MAXITER</label><input v-model.number="chiller_maxiter"></div>
+                                </template>
+
+                            </div>
+                        </div>
+
+                        <!-- Microgrid -->
+                        <div class="param-card">
+                            <div class="setting-title">Microgrid Parameters</div>
+
+                            <div class="param-card-body">
+                                <label>
+                                    <input type="checkbox" v-model="form.exportMicrogrid" />
+                                    輸出 Microgrid JSON
+                                </label>
+                                <div class="param-row"><label>forecast.horizon</label><input v-model.number="mg_forecast_horizon"></div>
+                                <div class="param-row"><label>BESS_MAX</label><input v-model.number="mg_bess_max"></div>
+                                <div class="param-row"><label>BESS_charge_MAX</label><input v-model.number="mg_bess_charge_max"></div>
+                                <div class="param-row"><label>BESS_discharge_MAX</label><input v-model.number="mg_bess_discharge_max"></div>
+                                <div class="param-row"><label>SoC_init</label><input v-model.number="mg_soc_init"></div>
+                                <div class="param-row"><label>SoC_min</label><input v-model.number="mg_soc_min"></div>
+                                <div class="param-row"><label>SoC_max</label><input v-model.number="mg_soc_max"></div>
+
+                                <div class="param-row"><label>cost_BESS_ch</label><input v-model.number="mg_cost_bess_ch"></div>
+                                <div class="param-row"><label>cost_BESS_disch</label><input v-model.number="mg_cost_bess_disch"></div>
+                                <div class="param-row"><label>MC_bess</label><input v-model.number="mg_mc_bess"></div>
+
+                                <div class="param-row"><label>beta0</label><input v-model.number="mg_beta0"></div>
+                                <div class="param-row"><label>beta1</label><input v-model.number="mg_beta1"></div>
+                                <div class="param-row"><label>beta2</label><input v-model.number="mg_beta2"></div>
+                                <div class="param-row"><label>ccap</label><input v-model.number="mg_ccap"></div>
+
+                                <div class="param-row"><label>carbon_factor</label><input v-model.number="mg_carbon_factor"></div>
+                                <div class="param-row"><label>carbon_price</label><input v-model.number="mg_carbon_price"></div>
+
+                                <div class="param-row"><label>swarm_size</label><input v-model.number="mg_swarm_size"></div>
+                                <div class="param-row"><label>iterations</label><input v-model.number="mg_iterations"></div>
+                                <div class="param-row"><label>w</label><input v-model.number="mg_w"></div>
+                                <div class="param-row"><label>w_max</label><input v-model.number="mg_w_max"></div>
+                                <div class="param-row"><label>w_min</label><input v-model.number="mg_w_min"></div>
+                                <div class="param-row"><label>c1</label><input v-model.number="mg_c1"></div>
+                                <div class="param-row"><label>c2</label><input v-model.number="mg_c2"></div>
+                                <div class="param-row"><label>penalty_weight</label><input v-model.number="mg_penalty_weight"></div>
+
+                                <div class="param-row"><label>MC_PV</label><input v-model.number="mg_mc_pv"></div>
+                                <div class="param-row"><label>cost_PV</label><input v-model.number="mg_cost_pv"></div>
+
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+                <div class="parameter-setting row" v-show="false">
+                    <div class="col-lg-6">
+                        <div class="metrology-grid">
+                            <div class="setting-title">Metrology Setting</div>
+                            <div class="setting-body">
+                                <div>
+                                    <label for="metrology-target">Target : <input class="metrology-target" v-model="metrologyTarget"></label>
+                                    <label for="metrology-usl">USL : <input class="metrology-usl" v-model="metrologyUsl"></label>
+                                    <label for="metrology-lsl">LSL : <input class="metrology-lsl" v-model="metrologyLsl"></label>
+                                    <label for="metrology-ucl">UCL : <input class="metrology-ucl" v-model="metrologyUcl"></label>
+                                    <label for="metrology-lsl">LCL : <input class="metrology-lcl" v-model="metrologyLcl"></label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row" style="margin-top: 2.5vh;">
+                            <div class="col-lg-6">
+                                <div class="dqiy-grid">
+                                    <div class="setting-title">DQIy Model</div>
+                                    <div class="setting-body">
+                                        <label for="dqiy-switch">DQIy Switch : <input class="dqiy-switch" v-model="dqiySwitch"></label>
+                                        <label for="phasel-error-threshold">Phasel Error Threshold : <input class="phasel-error-threshold" v-model="phaselErrorThreshold"></label>
+                                        <div><label>DQIy Switch:</label></div>
+                                        <div><label>0 (Default)</label></div>
+                                        <div><label>1 (SPEC)</label></div>
+                                        <div><label>2 (Upper DQIy Threshold)</label></div>
+                                    </div>
+                                </div>
+                                <div class="ri-model">
+                                    <div class="setting-title">Reliable Index(RI) Model</div>
+                                    <div class="setting-body">
+                                        <div><label>Tolerable Maximum Error : <input class="ri-maxmum-error" v-model="riMaxmumError"></label></div>
+                                        @*<div style="font-weight:normal;">
+                                                <label><input class="ri-manual"  type="checkbox" v-model="riManual" v-on:click="riCheck('Manual')"> Manual</label>
+                                                <label><input class="ri-auto" type="checkbox" v-model="riAuto" v-on:click="riCheck('Auto')"> Auto</label>
+                                            </div>
+                                            <div>
+                                                <label>Std Open : <input type="checkbox" v-model="stdOpen"></label>
+                                                <label>Rate : <input class="ri-rate" v-model="rate"></label>
+                                            </div>*@
+                                        <div>
+                                            <label>LookAheadCount (N).<input class="ri-look-ahead-count" v-model="lookAheadCount"></label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="kss-model">
+                                    <div class="setting-title">Keep Sampling Scheme(KSS)</div>
+                                    <div class="setting-body">
+                                        <div>
+                                            <label><input class="kss-sdmw" name="kssAlg" type="radio" checked="checked">Static & Dynamic Moving Window (SDMW)</label>
+                                        </div>
+                                        <div>
+                                            <label><input class="kss-smw" name="kssAlg" type="radio">Static Moving Window (SMW)</label>
+                                        </div>
+                                        <div>
+                                            <label><input class="kss-dmw" name="kssAlg" type="radio">Dynamic Window (DMW)</label>
+                                        </div>
+                                        <div>
+                                            <div style="display:inline;">
+                                                <div>
+                                                    <label for="kss-model-expansion-open">Model Expansion.OPEN <input class="kss-model-expansion-open" type="checkbox" v-model="modelExpansionOpen"></label>
+                                                </div>
+                                                <div>
+                                                    <label for="kss-model-adjusty-open">AdjustY.OPEN <input class="kss-model-adjusty-open" type="checkbox" v-model="modifyYOpen"></label>
+                                                </div>
+                                            </div>
+                                            <div style="display:inline;">
+                                                <div>
+                                                    <label for="kss-model-expansion-size">Model Expansion.SIZE: <input class="kss-model-expansion-size" v-model="modelExpansionSize"></label>
+                                                </div>
+                                                <div>
+                                                    <label for="kss-model-adjusty-scale">AdjustY.Scale: <input class="kss-model-adjusty-scale" v-model="adjustYScale"></label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-6">
+                                <div class="nn-grid">
+                                    <div class="setting-title">Neuro Network(NN) Model</div>
+                                    <div class="setting-body">
+                                        <div class="mom-term-rang">
+                                            <label class="nn-grid-label-title">Mom Term Rang </label>
+                                            @*<label class="nn-grid-label-value">Minimum <input v-model="momTermMin"></label>
+                                                <label class="nn-grid-label-value">Interval <input v-model="momTermInterval"></label>
+                                                <label class="nn-grid-label-value">Maximum <input v-model="momTermMax"></label>*@
+                                            <div class="mom-input"><input value="0.7"><input value="0.8"><input value="0.9"></div>
+                                            <div>
+                                                <div class="delete-input" v-on:click="deleteMomInput">－</div>
+                                                <div class="add-input" v-on:click="addMomInput">＋</div>
+                                            </div>
+                                        </div>
+                                        <div class="alpha-range">
+                                            <label class="nn-grid-label-title">Alpha Range </label>
+                                            @*<label class="nn-grid-label-value">Minimum <input v-model="alphaMin"></label>
+                                                <label class="nn-grid-label-value">Interval <input v-model="alphaInterval"></label>
+                                                <label class="nn-grid-label-value">Maximum <input v-model="alphaMax"></label>*@
+                                            <div class="alpha-input"><input value="0.15"><input value="0.25"></div>
+                                            <div>
+                                                <div class="delete-input" v-on:click="deleteAlphaInput">－</div>
+                                                <div class="add-input" v-on:click="addAlphaInput">＋</div>
+                                            </div>
+                                        </div>
+                                        <div class="epochs-range">
+                                            <label class="nn-grid-label-title">Epochs Range </label>
+                                            @*<label class="nn-grid-label-value">Minimum <input v-model="expochsMin"></label>
+                                                <label class="nn-grid-label-value">Interval <input v-model="expochsInterval"></label>
+                                                <label class="nn-grid-label-value">Maximum <input v-model="expochsMax"></label>*@
+                                            <div class="epochs-input"><input value="200"><input value="300"><input value="400"><input value="500"><input value="600"></div>
+                                            <div>
+                                                <div class="delete-input" v-on:click="deleteEpochsInput">－</div>
+                                                <div class="add-input" v-on:click="addEpochsInput">＋</div>
+                                            </div>
+                                        </div>
+                                        <div class="node-range">
+                                            <label class="nn-grid-label-title">Nodes Range</label>
+                                            <div class="node-input"><input value="14"><input value="16"><input value="18"><input value="20"></div>
+                                            <div>
+                                                <div class="delete-input" v-on:click="deleteNodeInput">－</div>
+                                                <div class="add-input" v-on:click="addNodeInput">＋</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="refresh-model-grid">
+                                    <div class="setting-title">Tuning Strategy</div>
+                                    <div class="setting-body">
+                                        <label>Force Refresh <input v-model="forceRefresh" type="checkbox"></label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-6">
+                        <div class="setting-title">AECNN</div>
+                        <div class="row">
+                            <div class="col-lg-6">
+                                <div class="adas-model-grid">
+                                    <div class="setting-title">ADAS Model</div>
+                                    <div class="setting-body" style="height:10vh;">
+                                        <label for="cnn-enable">CNN Enable <input class="cnn-enable" type="checkbox" v-model="CNNEnable"></label>
+                                        <label style="display:block;">Num_Step(設定欲放入的製程步驟)</label>
+                                        <div><h4>{{adasStep}}</h4></div>
+                                    </div>
+                                </div>
+                                <div class="cnn-model-grid">
+                                    <div class="setting-title">AutoEncoder & CNN Model</div>
+                                    <div class="setting-body">
+                                        <label>fillters  <input v-model="filters"></label>
+                                        <label>kernel_size  <input v-model="kernel_size"></label>
+                                        <label>activation  <input v-model="activation" disabled="disabled"></label>
+                                        <label>pool_size  <input v-model="pool_size"></label>
+                                        <label>epoch  <input v-model="epoch"></label>
+                                        <label>learning rate  <input v-model="learningRate"></label>
+                                        <label>patience  <input v-model="patience"></label>
+                                        <label>batch  <input v-model="batch"></label>
+                                        <label>dropout  <input v-model="dropout"></label>
+                                        <label>moment  <input v-model="moment"></label>
+                                        <label>DMW_switch <input class="input-dmw-switch" v-model="DMW_switch" style="float:right;"></label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-6">
+                                <div class="cnn-othersetting-model-grid">
+                                    <div class="setting-title">Other setting for CNN Model</div>
+                                    <div class="setting-body">
+                                        <label>tune_frequency  <input v-model="tune_frequency"></label>
+                                        <label>model_frequency  <input v-model="model_frequency"></label>
+                                        <label>virtual_cassette  <input v-model="virtual_cassette"></label>
+                                    </div>
+                                </div>
+                                <div class="cnn-refresh-model-grid">
+                                    <div class="setting-title">Tuning Strategy</div>
+                                    <div class="setting-body">
+                                        <label>Force Refresh <input v-model="cnnForceRefresh" type="checkbox"></label>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="selection-step text-right">
+                <span class="preset-grid text-left" style="display:none;">
+                    <label for="preset-file">
+                        Preset File:
+                        <input type="file" class="preset-file">
+                    </label>
+                    <button v-on:click="loadRecord" class="load-record-btn">Load</button>
+                    <button v-on:click="saveRecord" class="save-record-btn">Save</button>
+                </span>
+                <div v-show="noTestingData" style="color:red">樣本數無法滿足建模最低需求，可執行建模但無法進行驗證模型</div>
+                <div v-show="TestingData" style="color:blue">Training Count：{{trainingCount}}  Testing Count : {{testingCount}}</div>
+                <div>
+                    <label for="check-validation" v-if="avmItemPage===3">
+                    <input class="check-validation" type="checkbox" v-on:click="checkValidation" v-model="isCheckedTestingData"  style="display:none;"/> Model Validation</label>
+                </div>
+                <button class="btn btn-secondary previous" v-if="avmItemPage!==0" v-on:click="previousBtn">Previous</button>
+                <button class="btn btn-primary next" v-on:click="nextBtn">Next</button>
+                <button class="btn btn-primary build" style="display:none;" v-on:click="buildAvmModel">Build</button>
+            </div>
+        </div>
+    </div>
+    <div class="preset-loading">
+        <div class="loding-font">
+            Loading...
+        </div>
+    </div>
+    <div class="model-progress-mask"
+         v-if="modelProcessVisible">
+
+        <div class="model-progress-window">
+
+            <div class="model-progress-title">
+                {{ modelProcessTitle }}
+            </div>
+
+            <div class="model-progress-message">
+                {{ modelProcessMessage }}
+            </div>
+
+            <!-- RawData 下載 -->
+            <div v-if="modelProcessStage === 'RawData'">
+
+                <div class="model-progress-bar">
+                    <div class="model-progress-bar-value"
+                         v-bind:style="{
+                         width: rawDataDownloadPercent + '%'
+                     }">
+
+                        {{ rawDataDownloadPercent }}%
+                    </div>
+                </div>
+
+                <div class="model-progress-detail"
+                     v-if="rawDataTotalBatch > 0">
+
+                    Batch:
+                    {{ rawDataCurrentBatch }}
+                    /
+                    {{ rawDataTotalBatch }}
+                </div>
+
+            </div>
+
+            <!-- 建模中 -->
+            <div v-if="modelProcessStage === 'Model'"
+                 class="model-building-area">
+
+                <span class="model-building-spinner"></span>
+
+                <span>
+                    {{ modelProcessMessage }}
+                </span>
+            </div>
+
+            <!-- 建模完成，輸入 Model Name -->
+            <div v-if="modelProcessStage === 'Completed'"
+                 class="model-name-area">
+
+                <label class="model-name-label">
+                    Model Name
+                </label>
+
+                <input type="text"
+                       class="k-textbox model-name-input"
+                       v-model.trim="modelName"
+                       placeholder="請輸入 Model Name"
+                       v-on:keyup.enter="uploadCompletedModel">
+
+                <div class="model-name-error"
+                     v-if="modelNameError">
+
+                    {{ modelNameError }}
+                </div>
+
+                <div class="model-name-buttons">
+
+                    <button type="button"
+                            class="k-button k-primary"
+                            v-bind:disabled="modelUploading"
+                            v-on:click="uploadCompletedModel">
+
+                        {{ modelUploading
+                        ? "Uploading..."
+                        : "Upload Model" }}
+                    </button>
+
+                    <button type="button"
+                            class="k-button"
+                            v-bind:disabled="modelUploading"
+                            v-on:click="closeModelProgress">
+
+                        Close
+                    </button>
+
+                </div>
+            </div>
+
+            <!-- 上傳中 -->
+            <div v-if="modelProcessStage === 'Uploading'"
+                 class="model-building-area">
+
+                <span class="model-building-spinner"></span>
+
+                <span>
+                    正在上傳模型...
+                </span>
+            </div>
+
+            <!-- 完成 -->
+            <div v-if="modelProcessStage === 'Uploaded'"
+                 class="model-progress-completed">
+
+                {{ modelUploadResult }}
+            </div>
+
+            <!-- 失敗 -->
+            <div v-if="modelProcessStage === 'Failed'"
+                 class="model-progress-failed">
+
+                {{ modelProcessError }}
+            </div>
+
+        </div>
+    </div>
+</div>
+

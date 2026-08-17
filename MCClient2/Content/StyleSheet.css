@@ -1,0 +1,702 @@
+﻿body {
+}
+
+.guide {
+    height:100%;
+    padding:10px;
+    text-align:center;
+}
+
+
+.guide > ul {
+    margin: 0 auto;
+}
+
+    .guide > ul > li {
+        list-style: none;
+        background-color: #84C1FF;
+        width: 100%;
+        font-size: 1.75rem;
+        margin: 10px;
+        border-radius: 5px;
+        color: black;
+        padding: 5px;
+        margin-left: -2rem;
+    }
+
+.preset-loading {
+    padding: 5px;
+    z-index: 3;
+    background-color: #97CBFF;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 100px;
+    height: 50px;
+    text-align: center;
+    border-radius: 5px;
+    border-width: 1px;
+    color: black;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-block-color: black;
+    display:none;
+}
+
+.loding-font {
+    vertical-align:middle;
+}
+
+.setp-working {
+    background-color: #4C7ECF !important;
+}
+
+.btn-secondary {
+    background-color: #6c757d;
+    color: black;
+}
+.btn-primary{
+    background-color: #4C7ECF;
+    color: black;
+}
+
+    .btn-primary:hover  {
+        background-color: #4C7ECF !important;
+        color: black;
+    }
+    .btn-primary:focus {
+        background-color: #4C7ECF !important;
+        color: black !important;
+    }
+    .btn-primary::after {
+        background-color: #4C7ECF !important;
+        color: black;
+    }
+
+.selection {
+    /*height: 85vh;*/
+    min-height: 85vh;
+    padding: 15px;
+    background-color: #F0F0F0;
+    width: 82%;
+    min-width: 82%;
+    margin-left: 5px;
+}
+
+
+.combination-selection {
+    min-height:80vh;
+}
+.selection-work {
+    height: 95%;
+    margin: 5px;
+}
+
+.selection-step{
+    height:5%;
+    margin:5px;
+}
+
+.setting-title {
+    padding: 5px;
+    font-size: 18px;
+    color: black;
+    background-color: #4C7ECF;
+    width: 100%;
+}
+
+.setting-body {
+    padding: 5px;
+    border-width: 1px;
+    border-style: solid;
+    border-color: #BEBEBE;
+    background-color: #BEBEBE;
+}
+.date-start {
+    width:45%;
+}
+
+.fab-grid, .variables-grid {
+    margin-top: 20px;
+}
+
+.k-checkbox {
+    opacity: 1 !important;
+    width: auto !important;
+    -webkit-appearance: checkbox !important;
+}
+
+.color-white{
+    background-color:white;
+}
+
+.rawdata-prerocessing {
+    height:80vh;
+    overflow-y:auto;
+    overflow-x:hidden;
+}
+
+.stepId-open-btn {
+    display: inline;
+    font-size: 15px;
+    border-width: 1px;
+    border-style: solid;
+    border-color: gray;
+    font: icon;
+    font-size: 1em;
+    font-family: cursive;
+    margin-right: 3px;
+    cursor: pointer;
+    background-color: #E0E0E0;
+    border-radius: 2px;
+    font-weight:bolder;
+    text-shadow: 1px 1px 1px rgba(255,255,255, .22);
+}
+
+.stepId-open-btn:hover {
+    background-color: #97CBFF;
+}
+
+.spec-grid > ul {
+    list-style-type: none;
+    margin-left:-3.5em;
+}
+
+.spec-grid >ul >li {
+    margin:5px;
+}
+
+.spec-grid > ul > li > label > input {
+    width:8vw;
+}
+
+.usl , .lsl {
+    border-color:red;
+    border-style:solid;
+    border-width:3px;
+}
+
+
+
+.ucl, .lcl {
+    border-color: #FFD306;
+    border-style: solid;
+    border-width: 3px;
+}
+
+.temporaldata-grid, .indicator-rule-grid,
+.indicator-rule-chart, .ri-model, .kss-model, .adas-model-grid,
+.cnn-model-grid, .cnn-othersetting-model-grid, .refresh-model-grid, .cnn-refresh-model-grid {
+    margin-top: 2.5vh;
+}
+
+.metrology-target, .metrology-usl, .metrology-lsl, 
+.metrology-ucl, .metrology-lcl{
+    width: 5vw;
+}
+
+.dqiy-switch, .phasel-error-threshold {
+    width:6.5vw;
+}
+
+.dqiy-grid > .setting-title > label {
+    display: block;
+    margin: 10px;
+}
+
+    .dqiy-grid > .setting-title > label > input {
+        width: 5vw;
+        float: right;
+        text-align: center;
+    }
+
+
+.nn-grid-label-title {
+        display: block;
+}
+
+.nn-grid-label-value{
+    display:block;
+    width:100%;
+    margin:10px;
+}
+.nn-grid-label-value > input {
+    width:5vw;
+    float:right;
+    margin-right:1em;
+}
+
+
+.node-range > input {
+    width: 4vw;
+    margin: 5px;
+    text-align: center;
+}
+
+.cnn-model-grid > .setting-body > label {
+    display:block;
+    margin:10px;
+}
+
+    .cnn-model-grid > .setting-body > label > input {
+        width: 5vw;
+        float: right;
+        text-align: center;
+    }
+
+.cnn-othersetting-model-grid > .setting-body > label {
+    display: block;
+    margin: 10px;
+}
+
+.cnn-othersetting-model-grid > .setting-body > label > input {
+    width:5vw;
+    float:right;
+    text-align:center;
+}
+
+.rule-grid {
+    /*overflow:auto;*/
+}
+
+
+.delete-input, .add-input{
+    display:inline;
+    cursor:pointer;
+    
+}
+
+.node-input > input, .mom-input > input, 
+.alpha-input > input, .epochs-input > input {
+    display: inline;
+    width: 50px;
+    margin: 2px;
+}
+
+
+
+.variablesName-grid {
+    overflow: auto;
+}
+
+.spec-arrow {
+    cursor: pointer;
+}
+
+.spec-setting > ul, .con-setting > ul{
+    list-style: none;
+    display: none;
+}
+
+.spec-setting > ul > li, .con-setting > ul > li {
+    margin-left: 10px;
+}
+
+.modelProcessInfo{
+    display:none;
+}
+
+
+.metrology-grid > .setting-body > div > label > input,
+.dqiy-grid > .setting-body > label > input,
+.ri-model > .setting-body > div > label > input,
+.nn-grid > .setting-body > div > div > input
+{
+    text-align: center;
+    font-weight: bold;
+    width: 80px;
+}
+
+.variables-process-grid, .variables-metrology-grid {
+    display: flex;
+    height: 65vh;
+    overflow-x: scroll !important;
+    margin-top: 20px;
+}
+
+.trimBegin, .trimEnd {
+    width: 50px !important;
+}
+
+.temporaldata-toolbar {
+    padding:5px;
+    text-align:right;
+    background-color:white;
+}
+
+.temporaldata-toolbar {
+    visibility:hidden;
+}
+
+.k-grid td {
+    border-bottom-width:1px !important;
+}
+
+.k-calendar-container {
+    width:14.5em !important;
+}
+
+td:has( > .alarm-color) {
+    background-color: #FF5151;
+}
+
+.k-state-selected {
+    color: black !important;
+}
+
+.kss-model > ul > li {
+    list-style:none;
+}
+
+.kss-model-expansion-size, .kss-model-adjusty-scale {
+    width: 120px !important;
+}
+
+.limit{
+    margin-right:5px;
+}
+
+.piece-setting {
+    width: 100%;
+    text-align: right;
+    margin-top: 5px;
+}
+
+.btn-danger, .btn-warning {
+    color: black;
+    position: relative;
+    z-index: 1;
+}
+
+
+.warning-icon {
+    position: absolute;
+    z-index: 2;
+    width:15px;
+    height:15px;
+}
+
+.preset-grid {
+    margin: 5px;
+    float: left;
+    padding: 5px;
+    border-color: black;
+    border-width: 1px;
+    border-style: groove;
+}
+
+ .save-record-btn {
+}
+
+.preset-file {
+    display: inline !important;
+}
+
+input[type=file]::file-selector-button {
+    margin-right: 10px;
+    border: none;
+    background: #4C7ECF;
+    padding: 5px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background .2s ease-in-out;
+}
+
+    input[type=file]::file-selector-button:hover {
+        background: #4C7ECF;
+    }
+
+.load-preset {
+    height: 32.5vh;
+    background-color: white;
+    text-align: center;
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.load-preset > p {
+    position:absolute;
+    left:50%;
+    top:50%;
+}
+
+.min-width-class {
+    min-width: 150px;
+}
+
+.add-rule-btn {
+    position: absolute;
+    bottom: 0px;
+}
+
+
+.report-url{
+     float:right;
+}
+
+.parameter-layout {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 20px;
+}
+
+/* 右側 */
+.right-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* 卡片 */
+.param-card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    border: 1px solid #eee;
+}
+
+/* 標題 */
+/*.setting-title {
+    background: linear-gradient(90deg, #4f46e5, #3b82f6);
+    color: white;
+    padding: 10px 15px;
+    border-radius: 12px 12px 0 0;
+    font-weight: 600;
+}*/
+
+/* 內容 */
+.param-card-body {
+    padding: 16px;
+}
+
+/* 分區 */
+.param-section {
+    margin-bottom: 20px;
+    padding: 12px;
+    border-radius: 8px;
+    background: #f8fafc;
+}
+
+.section-title {
+    font-weight: 600;
+    font-size: 13px;
+    margin-bottom: 10px;
+    color: #2563eb;
+}
+
+/* row */
+.param-row {
+    display: grid;
+    grid-template-columns: 180px 1fr auto;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+}
+
+    .param-row label {
+        font-size: 12px;
+        color: #444;
+    }
+
+    .param-row input {
+        width: 100%;
+        max-width: 120px;
+        padding: 4px;
+    }
+
+    .param-row span {
+        font-size: 12px;
+        color: #888;
+    }
+
+    .param-row select {
+        max-width: 140px;
+        height: 28px;
+    }
+
+/* array */
+.param-array {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center; /* ⭐ 這行是關鍵 */
+}
+
+
+
+.array-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 4px;
+}
+
+.param-array input {
+    width: 70px;
+    border: 1px solid #ccc;
+    background: #fff; /* ⭐ 改白底 */
+}
+
+.array-item button {
+    height: 24px;
+    padding: 0 6px;
+    cursor: pointer;
+}
+
+.param-array button {
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.selection-work {
+    position: relative;
+    min-height: 300px;
+}
+
+/* RWD */
+@media (max-width: 1400px) {
+    .parameter-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+
+.model-progress-mask {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 99999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.35);
+}
+
+.model-progress-window {
+    width: 520px;
+    padding: 24px;
+    background: #ffffff;
+    border-radius: 6px;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.3);
+    box-sizing: border-box;
+}
+
+.model-progress-title {
+    margin-bottom: 10px;
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.model-progress-message {
+    min-height: 24px;
+    margin-bottom: 12px;
+    font-size: 14px;
+    color: #555555;
+    word-break: break-word;
+}
+
+.model-progress-bar {
+    width: 100%;
+    height: 28px;
+    overflow: hidden;
+    background: #eeeeee;
+    border-radius: 4px;
+}
+
+.model-progress-bar-value {
+    height: 100%;
+    min-width: 0;
+    line-height: 28px;
+    text-align: center;
+    white-space: nowrap;
+    background: #4285f4;
+    color: #ffffff;
+    transition: width 0.3s ease;
+}
+
+.model-progress-detail {
+    margin-top: 8px;
+    font-size: 13px;
+    color: #666666;
+}
+
+.model-building-area {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 32px;
+}
+
+.model-building-spinner {
+    width: 20px;
+    height: 20px;
+    display: inline-block;
+    flex-shrink: 0;
+    border: 3px solid #dddddd;
+    border-top-color: #4285f4;
+    border-radius: 50%;
+    animation: model-progress-spin 0.8s linear infinite;
+}
+
+.model-progress-completed {
+    color: #198754;
+    font-weight: bold;
+}
+
+.model-progress-failed {
+    color: #dc3545;
+    font-weight: bold;
+    word-break: break-word;
+}
+
+@keyframes model-progress-spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+
+.model-name-area {
+    margin-top: 10px;
+}
+
+.model-name-label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.model-name-input {
+    width: 100%;
+    height: 34px;
+    box-sizing: border-box;
+}
+
+.model-name-error {
+    margin-top: 6px;
+    color: #dc3545;
+    font-size: 13px;
+}
+
+.model-name-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 16px;
+}
+
+.model-progress-completed {
+    color: #198754;
+    font-weight: bold;
+}

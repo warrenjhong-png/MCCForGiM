@@ -1,0 +1,51 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Model Creation</title>
+    @Styles.Render("~/Content/css")
+    @Scripts.Render("~/bundles/modernizr")
+
+</head>
+<body>
+    <div class="navbar navbar-dark bg-primary">
+        <div class="container-fluid text-center" style="color: black; background-color: #4C7ECF">
+            <h2>Model Creation</h2>
+        </div>
+    </div>
+
+    <div class="container-fluid">
+        <div style="height:80vh;">
+            @RenderBody()
+        </div>
+        @*<hr />
+        <footer>
+            <p style="text-align:center;">NCKU-iMRC. © Copyright 2022. All Rights Reserved</p>
+        </footer>*@
+    </div>
+    @Scripts.Render("~/bundles/jquery")
+    @Scripts.Render("~/bundles/bootstrap")
+
+    <script src="~/Scripts/vue.min.js"></script>
+    <script src="~/Scripts/dist/Method.js"></script>
+    <script src="~/Scripts/dist/KendoApi.js"></script>
+    <script src="~/Scripts/dist/struct/combination.js"></script>
+    <script src="~/Scripts/dist/struct/Variables.js"></script>
+    <script src="~/Scripts/dist/DataCollection.js"></script>
+    <script src="~/Scripts/dist/struct/AvmModuleInfo.js"></script>
+    <script src="~/Scripts/dist/struct/RawDataPreprocess.js"></script>
+    <script src="~/Scripts/dist/struct/PresetBlob.js"></script>
+    <script src="~/Scripts/dist/BuildModel.js"></script>
+    <script src="~/Scripts/dist/AvmPage.js"></script>
+    <script src="~/Scripts/jquery-3.3.1.min.js"></script>
+    <script src="~/Scripts/kendo/jquery.min.js"></script>
+    <script src="~/Scripts/kendo/jszip.min.js"></script>
+    <script src="~/Scripts/kendo/kendo.all.min.js"></script>
+
+
+
+    @RenderSection("scripts", required: false)
+</body>
+</html>

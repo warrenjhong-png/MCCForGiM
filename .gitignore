@@ -1,0 +1,42 @@
+# Source control / IDE
+.svn/
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Build outputs and restored dependencies
+[Bb]in/
+[Oo]bj/
+packages/
+node_modules/
+TestResults/
+*.nupkg
+
+# Runtime data and logs
+MCClient2/logs/
+MCClient2/App_Data/
+*.log
+
+# SVN conflict and revision backup artifacts
+*.mine
+*.r[0-9]*
+
+# Local environment and secrets
+*.ini
+*.env
+*.pfx
+*.p12
+*.pem
+*.key
+
+# Generated documentation intermediates
+doc_assets/
+docx_render/
+tools/
+
+# OS files
+Thumbs.db
+Desktop.ini
+.DS_Store

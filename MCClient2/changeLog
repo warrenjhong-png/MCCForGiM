@@ -1,0 +1,381 @@
+﻿
+20260812 v1.1.3.4
+1.移除參數設定頁面的 module_type 下拉選單
+2.移除 BuildModel API request JSON 的 module_type 欄位
+3.移除模型建置任務 JSON 輸出的 module_type 屬性
+
+20260728 v1.1.3.3
+1.增加輸出Feafeature_name 資料夾
+2.修改model_config.json 名稱
+
+20260727 v1.1.3.2
+1.增加TrainingData和 hyper_parameters 目錄
+2.增加資料下載進度顯示
+
+
+20260723
+1.STEP 1 移除判斷非成對資料
+2.不在STEP 3 下載RawData
+3.優化部分程式碼邏輯
+4.取消tempora data chart
+
+
+20260602 v1.1.3.1
+1.修改Model資訊上傳程式碼
+
+
+20260528 v1.1.3.0
+1.修改Trim的計算
+2.增加建模Post 參數
+3.新增建立numerical_cols,target_col txt 檔
+
+
+20260402 v1.1.2.9
+1.修改build model 觸發程式
+
+20260324
+1.增加能源預測、生產排程、廠務調控、微電網參數設定
+
+
+20260316 v1.1.2.3
+1.修改temproalchart 顯示及RawData 取得方式
+2.修改
+
+
+20241009 v1.1.2.2
+1.修復Model Validation 取消 testCount沒有清0問題
+
+20241009 v1.1.2.1
+1.增加Rule 防呆機制
+2.修復testCount 按下返回鍵沒有清0問題
+
+20240910 v1.1.1.7
+1.增加建模Report 下載
+2.增加Model Validation 選項
+
+20240910 v1.1.1.4
+1.修正 MCC 生產履歷選單空白、無選項可挑選問題
+2.GetStepID方法參數重命名
+
+20240627 v1.1.1.3
+1.刪除部分log
+
+20240627 v1.1.1.2
+1.修改Log 寫入方法
+
+20240627 v1.1.1.1
+1.增加部分SQL 語法log
+
+20240607 v1.1.1.0
+1.增加LoadPreset 時 檢查variable ID 機制
+
+20240523 v1.1.0.9
+1.修復Rule 的variable id 因返回第二頁新增新的variable 而導致 variable id 排序錯誤問題
+
+20240229 v1.1.0.8
+1.修復LoadPreset Preprocessing Save File moduleIndicatorRule 部分儲存錯誤問題
+
+20240227 v1.1.0.7
+1.優化Preprocessing rule LoadPreset 效能
+2.修復從第四步驟回到第三步驟，load preset欄位會消失，回到第四步驟也消失，要回到第二步驟，再回來才會出現問題
+
+
+20240119 v1.1.0.6
+1.修復Preprocessing rule LoadPreset問題
+
+20240118 v1.1.0.5
+1.修改 Data Collection LoadPreset 邏輯
+2.ini檔增加Render 時間設定
+
+20240108 v1.1.0.4
+1.修化Combination 全選校能
+
+20231222 v1.1.0.3
+1.增加combination 全選功能
+
+20231113 v1.1.0.2
+1.增加Preset 如實保存需計算的 spec 設定方式(sigma or %)
+
+
+20231101 v1.1.0.1
+1.修復variablesSelection preset 重load之後input output數值重複相加問題
+2.ini檔增加 delayRenderTime
+3.Precess Load Preset 時取消Chart繪製
+
+20231101 v1.1.0.0
+1.Raw Data Preprocessing Trim的提示方式
+2.raw data chart 取消區域拖拉方式
+3.Parameter 頁面修復Preset 沒有移除不必要的參數問題
+
+20231012 v1.0.9.9
+1.修改preprocessing preset 部分程式碼
+
+20230925 v1.0.9.8
+1.修改preprocessing preset 部分程式碼
+
+
+20230925 v1.0.9.7
+1.修改parameter 頁面 load preset時 node range bug
+
+20230908 v1.0.9.6
+1.新增沒有rawdata id的警告
+
+20230908 v1.0.9.5
+1.增加Load Preset 完成訊息
+2.修復LoadPreprocessing 的bug
+
+20230825 v1.0.9.4
+1.隱藏warning ID按鈕
+
+20230825 v1.0.9.3
+1.修改第三頁preset 功能
+
+20230823
+1.修改LoadPreprocessing的方法
+
+20230817 v1.0.9.2
+1.增加add rule如果沒有rawdata 就不要新增的防呆機制
+2.增加rawdata 有問題ID處理
+
+20230808 v1.0.9.1
+1.preset功能 增加The format does not match 警示 
+
+20230808 v1.0.9.0
+1.增加Combination Selection,Variable Selection,Parameter Setting  preset功能
+
+20230626 v1.0.8.9
+1.log write Refactor
+
+20230626 v1.0.8.8
+1.修改錯別字Patameter => Parameter
+2.增加Metadata.json
+3.修改zip檔的壓縮方式
+4.增加按下第二次建模可重複上傳機制
+
+20230626 v1.0.8.7
+1.修復virtual_cassette 的欄位顯示錯
+
+20230612 v1.0.8.5
+1.增加DQIy 的PhaseI_Error_Threshold，同時也帶給DQIy 的 SimDriftVolume
+
+20230612 v1.0.8.4
+1.修改cnn refresh json輸出1/0
+
+20230606 v1.0.8.3
+1.預設refresh checkbox 取消勾選
+
+20230606 v1.0.8.2
+1.增加refresh機制
+
+20230522 v1.0.8.1
+1.新增Query按鈕class
+
+20230517 v1.0.8.0
+1.安裝NLog紀錄log
+2.GetStdbDefFields 增加log
+
+
+20230517 v1.0.7.9
+1.修改dqiy參數設定沒帶到設定檔問題
+
+
+20230510 v1.0.7.8
+1.給予disable的check box 決定trim不trim
+2.取消勾勾trimBegin和trimEnd給-1
+3.給予挑片功能
+
+20230329 v1.0.7.6
+1.修復indicator rule grid 取錯UCL LCL參數錯誤問題
+
+20230329 v1.0.7.5
+1.修復indicator chart YScale小數取至3位 誤值為XScale錯誤
+2.更新indicator chart 因為trim不同而導致帶錯ID的問題
+
+20230329 v1.0.7.4
+1.增加Y只能選取1個機制
+
+
+20230329 v1.0.7.3
+1.取消CNN預設勾選
+2.indicator chart YScale stepcount預設為8 及YScale小數取至3位
+3.修改indicator rule grid 的小數點格式取6位
+
+
+
+20230329 v1.0.7.2
+1.修改indicator chart YScale計算方式
+
+20230329 v1.0.7.1
+1.修改indicator chart YScale計算方式
+
+
+20230328 v1.0.7.0
+1.修復沒有step的桶子無法畫出Chart的問題
+
+20230328 v1.0.6.9
+1.修復Variables is not checked的警告訊息狂跳的問題
+
+20230328 v1.0.6.8
+1.修改因為部分step沒有rawdata而導致錯誤問題
+
+20230328 v1.0.6.7
+1.修復rule grid render錯誤
+
+20230328 v1.0.6.6
+1.修復excel因刪除功能導致輸出錯誤問題
+
+20230328 v1.0.6.4
+1.修復remove功能異常導致parameter json輸出異常
+2.增加step點擊觸發繪製temporal data功能
+
+20230325 v1.0.6.3
+1.修復因rawdata 長度不足導致trim資料有問題
+
+20230324 v1.0.6.2
+1.註解DCP的防呆機制
+
+20230324 v1.0.6.1
+1.修復上下界有trim時錯誤問題
+
+20230323 v1.0.6.0
+1.修改UploadModel的Model Detail的Code
+
+20230322 v1.0.5.9
+1.moduleIndicatorRuleReset 增加切割字串的防呆機制
+
+v1.0.5.8
+1.RI 移除Manual Auto 選項
+2.RI 增加maxmum error參數
+3.RI 增加aRI參數
+
+v1.0.5.7
+1.修改KSS kendo Input 重複渲染問題
+
+v1.0.5.6
+1.修改grid適應度
+
+v1.0.5.5
+1.NN Range設定方式修改
+2.增加KSS建模參數設定
+
+v1.0.5.3
+1.修復model detail的因double.nan無法insert db問題
+
+v1.0.5.2
+1.修改ModelDetial中indicator 上下界填寫錯誤問題
+
+v1.0.5.1
+1.修改Data Collection頁面 variable Name checkbox的位置
+2.修復在有step的情況下點選add rule仍能新增的問題
+3.修改modelDetial中 indicatorName沒有alg問題
+
+v1.0.4.4
+1.uploadzip 增加model detial接口及JSON檔儲存
+
+v1.0.4.3 20230117
+1.修改UI配色
+2.註解add rule 上限999999標記紅色
+3.修改add rule 時 只有trim begin和trim end 修改時才能新增rule
+
+v1.0.4.1 20230112
+1.修改adas顯示方式及儲存方式為多個桶子的聯集
+
+v1.0.4.0 20230112
+1.DMW_Switch增加Tune by Each Point
+2.Delect增加多選刪除功能
+
+20230109
+1.更新title字體顏色
+2.優化計算indicator效率
+3.優化增加add rule效率
+4.顯示Temporary Data 改為點擊之後直接秀Chart及計算Spec
+
+
+v1.0.3.9 20230109
+1.修復輸入Model Name時 彈跳視窗持續跳出的錯誤
+2.UploadModelZip interface 增加indicators
+
+v1.0.3.8
+1.KSS 參數型態改為double
+
+v1.0.3.7
+1.修改檢查OK.txt的時間為1秒一次
+
+v1.0.3.6
+1.修改沒點選Raw Data就點選Add Rule之後產生的rule grid問題
+
+v1.0.3.4
+1.調整variable頁面排版問題
+
+v1.0.2.8
+1.修改DCP filter部分rule沒產生的錯誤
+
+v1.0.2.7 
+1.修改model上傳方式
+2.增加model name命名視窗
+3.system.ini增加CDB資訊
+
+v1.0.2.6 20221024
+1.修改METROLOGY.csv取得不重複PIECEID資料
+
+v1.0.2.5 20221021
+1.修改取得顯示筆數為成對PIECEID資料
+
+v1.0.2.4 20221019
+1.解決因字串過長無法序列化問題
+
+v1.0.2.3 20221013
+1.Combination頁面選項修改為取消前面選擇後面就要刷新
+2.修改input及output grid CSS版面配置
+3.BPNN開放MomTern和Alpha interval參數配置
+
+
+v1.0.2.2 20220805
+1.增加zip含式try catch;
+
+v1.0.2.1 20220805
+1.增加DCP如果indicator有而Sensor沒有就重新編號的防呆機制
+
+v1.0.2.0 20220804
+1.增加沒有stepID防呆
+2.預設step 選項列表為展開
+3.增加k-grid td CSS底線樣式
+4.增加儲存html.txt檔案
+
+v1.0.1.9 20220803
+1.增加刪除rule功能
+2.修改讀取Error.txt路徑
+
+
+v1.0.1.8 20220801
+1.修改rule欄位的重複增加的錯誤
+2.修改step為0時的ID
+3.增加buildModel url 設定
+
+v1.0.1.7 20220801
+1.增加手動及percentageg上下界設定
+2.增加temportChart只有一個點時無法顯示問題
+3.增加建模失敗讀取log問題
+
+v1.0.1.6 20220729
+1.修正最後判斷的檔案路徑
+
+v1.0.1.5 20220729
+1.更換最後建模完成之後需要判斷的檔名
+
+
+v1.0.1.4
+1.修改如果X沒有step取不到資料問題
+2.修改DCP格式問題
+
+v1.0.1.3
+1.修改每次add rule之後 filiter的原本的內容不見問題
+2.修改filterrulesDC的betrim的問題
+
+
+v1.0.1.2
+1.修改部分indicator計算處物
+2.增加顯示taskId
+3.增加顯示建模processing
+4.增加未取得Piece Count 防呆
+5.增加未點選X跟Y提示
