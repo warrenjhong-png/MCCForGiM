@@ -421,6 +421,11 @@ var DataCollection;
                 type: "POST",
                 contentType: "application/json; charset=utf-8",
                 dataType: "json",
+                /*
+                 * This only times out the lightweight progress request.
+                 * It never cancels the background RawData batch.
+                 */
+                timeout: 30000,
                 data: JSON.stringify({
                     taskId: taskId
                 }),
@@ -435,5 +440,29 @@ var DataCollection;
         });
     }
     DataCollection.GetRawDataDownloadProgress = GetRawDataDownloadProgress;
+    function RequestStopRawDataDownload(taskId) {
+        return new Promise((resolve, reject) => {
+            $.ajax({
+                url: Method.generateUrl() +
+                    "/Avm/RequestStopRawDataDownload",
+                type: "POST",
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                data: JSON.stringify({
+                    taskId: taskId
+                }),
+                success: function (result) {
+                    resolve(result);
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    reject(new Error(jqXHR.responseText ||
+                        errorThrown ||
+                        textStatus ||
+                        "送出 RawData 停止要求失敗"));
+                }
+            });
+        });
+    }
+    DataCollection.RequestStopRawDataDownload = RequestStopRawDataDownload;
 })(DataCollection || (DataCollection = {}));
 //# sourceMappingURL=DataCollection.js.map

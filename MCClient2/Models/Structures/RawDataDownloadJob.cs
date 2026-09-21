@@ -23,6 +23,23 @@ namespace MCClient2.Models.Structures
 
         public int TotalBatch { get; set; }
 
+        /*
+         * TotalBatch / CurrentBatch are kept for the existing progress UI.
+         * The following fields describe the whole download job and are
+         * optional additions to the persisted JSON contract.
+         */
+        public int CompletedBatches { get; set; }
+
+        public int TotalBatches { get; set; }
+
+        public int RemainingBatches { get; set; }
+
+        public DateTime? LastProgressAtUtc { get; set; }
+
+        public bool StopRequested { get; set; }
+
+        public bool PartialResult { get; set; }
+
         public long ProcessedCount { get; set; }
 
         public long TotalCount { get; set; }

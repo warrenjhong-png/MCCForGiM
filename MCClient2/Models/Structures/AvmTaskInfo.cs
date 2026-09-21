@@ -5,6 +5,7 @@ namespace MCClient2.Models.Structures
     public class AvmTaskInfo
     {
         public string task_id { get; set; }
+        public string module { get; set; }
         public AvmModelInfo model { get; set; }
         public AvmParameters parameters { get; set; }
     }
@@ -56,6 +57,7 @@ namespace MCClient2.Models.Structures
     {
         public int variableid { get; set; }
         public string variablename { get; set; }
+        public string fieldname { get; set; }
         public int isseparator { get; set; }
         public string[] separatingvalues { get; set; }
     }

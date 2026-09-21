@@ -370,7 +370,7 @@ namespace MCClient2.Models
             }
         }
 
-        public void DownloadRawDataInBatches(string taskId,DateTime startTime,DateTime endTime,Dictionary<string, List<string>> conditions,List<Variables> variables,
+        public void DownloadRawDataInBatches(string jobId,string taskId,DateTime startTime,DateTime endTime,Dictionary<string, List<string>> conditions,List<Variables> variables,
             Action<RawDataDownloadJob> reportProgress,CancellationToken cancellationToken)
         {
             const int batchSize = 5000;
@@ -378,16 +378,25 @@ namespace MCClient2.Models
             var job =
                 new RawDataDownloadJob
                 {
-                    JobId = Guid.NewGuid().ToString(),
+                    JobId = jobId,
                     TaskId = taskId,
                     Status = "Running",
                     Phase = "QueryPiece",
                     Message = "正在查詢 Piece",
                     Percent = 1,
-                    StartTime = DateTime.Now
+                    StartTime = DateTime.Now,
+                    LastProgressAtUtc = DateTime.UtcNow
                 };
 
             reportProgress(job);
+
+            if (RawDataDownloadControlManager
+                .IsStopRequested(taskId))
+            {
+                RawDataDownloadControlManager
+                    .MarkStopped(job);
+                return;
+            }
 
             // 第一階段：取得 Piece ID
             List<string> pieceIds =
@@ -424,14 +433,25 @@ namespace MCClient2.Models
                 );
 
             int totalWork =
-                variables.Count * batchCount;
+                (variables.Count + 1) * batchCount;
 
             int completedWork = 0;
+
+            job.TotalBatches = totalWork;
+            job.RemainingBatches = totalWork;
 
             foreach (Variables vars in variables)
             {
                 cancellationToken
                     .ThrowIfCancellationRequested();
+
+                if (RawDataDownloadControlManager
+                    .IsStopRequested(taskId))
+                {
+                    RawDataDownloadControlManager
+                        .MarkStopped(job);
+                    return;
+                }
 
                 string csvPath =
                     Path.Combine(
@@ -454,6 +474,19 @@ namespace MCClient2.Models
                 {
                     cancellationToken
                         .ThrowIfCancellationRequested();
+
+                    /*
+                     * Soft stop boundary: do not begin another batch
+                     * after a stop request. The active query/write is
+                     * intentionally allowed to complete below.
+                     */
+                    if (RawDataDownloadControlManager
+                        .IsStopRequested(taskId))
+                    {
+                        RawDataDownloadControlManager
+                            .MarkStopped(job);
+                        return;
+                    }
 
                     List<string> batchPieceIds =
                         pieceIds
@@ -478,7 +511,7 @@ namespace MCClient2.Models
                     reportProgress(job);
 
                     DataTable batchTable =
-                        GetRawdataTable(
+                        GetAvm3RawDataTable(
                             StdbAgent,
                             vars,
                             batchPieceIds
@@ -489,11 +522,6 @@ namespace MCClient2.Models
                         batchTable.Rows.Count > 0
                     )
                     {
-                        PrepareRawDataTable(
-                            batchTable,
-                            vars
-                        );
-
                         AppendTableToCsv(
                             batchTable,
                             csvPath,
@@ -507,6 +535,12 @@ namespace MCClient2.Models
                     }
 
                     completedWork++;
+
+                    job.CompletedBatches = completedWork;
+                    job.RemainingBatches = Math.Max(
+                        0,
+                        totalWork - completedWork);
+                    job.LastProgressAtUtc = DateTime.UtcNow;
 
                     /*
                      * 5%：查 Piece
@@ -522,6 +556,21 @@ namespace MCClient2.Models
                         );
 
                     reportProgress(job);
+
+                    /*
+                     * This is the second soft stop boundary. The current
+                     * batch has already queried and written its CSV data.
+                     * If the final batch completed concurrently, Completed
+                     * wins over StopRequested.
+                     */
+                    if (completedWork < totalWork &&
+                        RawDataDownloadControlManager
+                            .IsStopRequested(taskId))
+                    {
+                        RawDataDownloadControlManager
+                            .MarkStopped(job);
+                        return;
+                    }
                 }
 
                 if (!headerWritten)
@@ -533,11 +582,95 @@ namespace MCClient2.Models
                 }
             }
 
+            string sysSettingPath =
+                Path.Combine(
+                    outputPath,
+                    "SYSSETTING.csv"
+                );
+
+            if (File.Exists(sysSettingPath))
+            {
+                File.Delete(sysSettingPath);
+            }
+
+            bool sysSettingHeaderWritten = false;
+
+            for (
+                int batchIndex = 0;
+                batchIndex < batchCount;
+                batchIndex++
+            )
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                List<string> batchPieceIds =
+                    pieceIds
+                        .Skip(batchIndex * batchSize)
+                        .Take(batchSize)
+                        .ToList();
+
+                job.Status = "Running";
+                job.Phase = "DownloadRawData";
+                job.CurrentBatch = batchIndex + 1;
+                job.TotalBatch = batchCount;
+                job.Message =
+                    $"SYSSETTING：第 {batchIndex + 1:N0} / " +
+                    $"{batchCount:N0} 批";
+
+                reportProgress(job);
+
+                DataTable sysSettingTable =
+                    GetAvm3SysSettingTable(
+                        StdbAgent,
+                        batchPieceIds
+                    );
+
+                if (sysSettingTable.Rows.Count > 0)
+                {
+                    AppendTableToCsv(
+                        sysSettingTable,
+                        sysSettingPath,
+                        !sysSettingHeaderWritten
+                    );
+
+                    sysSettingHeaderWritten = true;
+                }
+
+                completedWork++;
+                job.CompletedBatches = completedWork;
+                job.RemainingBatches = Math.Max(
+                    0,
+                    totalWork - completedWork
+                );
+                job.LastProgressAtUtc = DateTime.UtcNow;
+                job.Percent =
+                    5 +
+                    (int)Math.Floor(
+                        completedWork /
+                        (double)totalWork *
+                        90
+                    );
+
+                reportProgress(job);
+            }
+
+            if (!sysSettingHeaderWritten)
+            {
+                throw new Exception(
+                    "SYSSETTING No RawData Exist!"
+                );
+            }
+
             job.Status = "Completed";
             job.Phase = "Completed";
             job.Message = "RawData 下載完成";
             job.Percent = 100;
             job.FinishTime = DateTime.Now;
+            job.CompletedBatches = totalWork;
+            job.TotalBatches = totalWork;
+            job.RemainingBatches = 0;
+            job.PartialResult = false;
+            job.LastProgressAtUtc = DateTime.UtcNow;
 
             reportProgress(job);
         }
@@ -1000,6 +1133,25 @@ namespace MCClient2.Models
         {
             return DefFields[table];
         }
+
+        public string GetDefField(string defTable, string variableName)
+        {
+            Dictionary<string, string> variableFields;
+            string fieldName;
+
+            if (string.IsNullOrWhiteSpace(defTable) ||
+                string.IsNullOrWhiteSpace(variableName) ||
+                !DefFields.TryGetValue(defTable, out variableFields) ||
+                !variableFields.TryGetValue(variableName, out fieldName) ||
+                string.IsNullOrWhiteSpace(fieldName))
+            {
+                throw new KeyNotFoundException(
+                    $"STDB DEF 找不到欄位映射：{defTable}.{variableName}"
+                );
+            }
+
+            return fieldName;
+        }
         /// <summary>
         /// 取得CategoryName
         /// </summary>
@@ -1184,6 +1336,87 @@ namespace MCClient2.Models
             {
                 return new DataTable();
             }
+        }
+
+        private DataTable GetAvm3RawDataTable(
+            DbAgent dbAgent,
+            Variables vars,
+            List<string> pieceIds)
+        {
+            Dictionary<string, string> deviceDef =
+                GetDeviceDef(vars.MetaName);
+
+            string dataLinkId =
+                CacheManager.GetCachableData(
+                    vars.MetaName,
+                    () => DBInfo.GetDataLinkField(
+                        StdbAgent,
+                        vars.MetaName
+                    ),
+                    TimeSpan.FromMinutes(10)
+                );
+
+            var sql = new StringBuilder();
+            sql.Append(
+                "SELECT ST.CONTEXTID AS CONTEXTID, " +
+                "ST.TIMETAG AS TIMETAG, " +
+                "XT.TIME01 AS TIME01"
+            );
+
+            foreach (VariableName variable in vars.VariableNames)
+            {
+                string fieldName = deviceDef[variable.Name];
+                sql.Append(", XT.")
+                    .Append(fieldName)
+                    .Append(" AS [")
+                    .Append(fieldName)
+                    .Append("]");
+            }
+
+            sql.Append(" FROM SYSSETTING ST JOIN ")
+                .Append(vars.Name)
+                .Append(" XT ON ST.")
+                .Append(dataLinkId)
+                .Append(" = XT.CONTEXTID WHERE ST.CONTEXTID IN ")
+                .Append(
+                    dbAgent.SqlMaker.ToConditionValue(
+                        pieceIds
+                    )
+                );
+
+            if (vars.HasStep && vars.StepID.Data != null)
+            {
+                sql.Append(" AND XT.")
+                    .Append(deviceDef[vars.StepID.Name])
+                    .Append(" IN ")
+                    .Append(
+                        dbAgent.SqlMaker.ToConditionValue(
+                            vars.StepID.Data
+                        )
+                    );
+            }
+
+            sql.Append(
+                " ORDER BY ST.TIMETAG, " +
+                "ST.CONTEXTID, XT.TIMETAG"
+            );
+
+            return dbAgent.Driver.ExecuteDataTable(
+                sql.ToString()
+            );
+        }
+
+        private DataTable GetAvm3SysSettingTable(
+            DbAgent dbAgent,
+            List<string> pieceIds)
+        {
+            string sql =
+                "SELECT CONTEXTID, TIMETAG, TIME01 " +
+                "FROM SYSSETTING WHERE CONTEXTID IN " +
+                dbAgent.SqlMaker.ToConditionValue(pieceIds) +
+                " ORDER BY TIMETAG, CONTEXTID";
+
+            return dbAgent.Driver.ExecuteDataTable(sql);
         }
         //private DataTable GetRawdataTable(DbAgent dbAgent, Variables vars, List<string> pieceIds) //TODO: IN Limitation for 1000 count may cause lost,需修改分頁寫入csv
         //{

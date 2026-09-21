@@ -552,6 +552,12 @@
 
                     dataType: "json",
 
+                    /*
+                     * This only times out the lightweight progress request.
+                     * It never cancels the background RawData batch.
+                     */
+                    timeout: 30000,
+
                     data: JSON.stringify({
                         taskId: taskId
                     }),
@@ -571,6 +577,53 @@
                             new Error(
                                 errorThrown ||
                                 textStatus
+                            )
+                        );
+                    }
+                });
+            }
+        );
+    }
+
+    export function RequestStopRawDataDownload(
+        taskId: string
+    ): Promise<any> {
+
+        return new Promise(
+            (resolve, reject) => {
+                $.ajax({
+                    url:
+                        Method.generateUrl() +
+                        "/Avm/RequestStopRawDataDownload",
+
+                    type: "POST",
+
+                    contentType:
+                        "application/json; charset=utf-8",
+
+                    dataType: "json",
+
+                    data: JSON.stringify({
+                        taskId: taskId
+                    }),
+
+                    success: function (
+                        result: any
+                    ) {
+                        resolve(result);
+                    },
+
+                    error: function (
+                        jqXHR: any,
+                        textStatus: string,
+                        errorThrown: string
+                    ) {
+                        reject(
+                            new Error(
+                                jqXHR.responseText ||
+                                errorThrown ||
+                                textStatus ||
+                                "送出 RawData 停止要求失敗"
                             )
                         );
                     }

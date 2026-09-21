@@ -14,12 +14,25 @@ namespace MCClient2.Models.Managers
             new object();
 
         private static string GetStatusPath(
-            string taskId)
+            string taskId,
+            bool createDirectory)
         {
-            string taskPath =
-                PathHelper.GetDirPath(taskId);
+            string taskPath;
 
-            Directory.CreateDirectory(taskPath);
+            if (!RawDataDownloadControlManager
+                .TryGetTaskDirectory(
+                    taskId,
+                    out taskPath))
+            {
+                throw new ArgumentException(
+                    "TaskId 無效",
+                    nameof(taskId));
+            }
+
+            if (createDirectory)
+            {
+                Directory.CreateDirectory(taskPath);
+            }
 
             return Path.Combine(
                 taskPath,
@@ -34,7 +47,9 @@ namespace MCClient2.Models.Managers
                 return;
 
             string path =
-                GetStatusPath(job.TaskId);
+                GetStatusPath(
+                    job.TaskId,
+                    true);
 
             string json =
                 JsonConvert.SerializeObject(
@@ -44,21 +59,10 @@ namespace MCClient2.Models.Managers
 
             lock (LockObject)
             {
-                string tempPath =
-                    path + ".tmp";
-
-                File.WriteAllText(
-                    tempPath,
-                    json
-                );
-
-                if (File.Exists(path))
-                    File.Delete(path);
-
-                File.Move(
-                    tempPath,
-                    path
-                );
+                RawDataDownloadControlManager
+                    .WriteAllTextAtomically(
+                        path,
+                        json);
             }
         }
 
@@ -66,7 +70,9 @@ namespace MCClient2.Models.Managers
             string taskId)
         {
             string path =
-                GetStatusPath(taskId);
+                GetStatusPath(
+                    taskId,
+                    false);
 
             if (!File.Exists(path))
                 return null;

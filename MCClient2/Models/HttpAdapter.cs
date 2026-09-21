@@ -43,9 +43,11 @@ namespace MCClient2.Models
                         }
                     }
                 }
-            }catch(Exception e)
+            }
+            catch (Exception)
             {
-                return e.Message;
+                // 連線失敗不能當成 API 正常回應文字，交由呼叫端顯示「API 無回應」。
+                throw;
             }
             return json;
         }

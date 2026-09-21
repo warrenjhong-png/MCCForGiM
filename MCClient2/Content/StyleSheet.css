@@ -512,8 +512,10 @@ input[type=file]::file-selector-button {
     }
 
     .param-row select {
-        max-width: 140px;
+        width: 100%;
+        max-width: 120px;
         height: 28px;
+        box-sizing: border-box;
     }
 
 /* array */
@@ -624,6 +626,75 @@ input[type=file]::file-selector-button {
     margin-top: 8px;
     font-size: 13px;
     color: #666666;
+}
+
+.rawdata-download-warning,
+.rawdata-download-stop-requested,
+.rawdata-download-stopped {
+    margin-top: 14px;
+    padding: 12px;
+    border-radius: 4px;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.rawdata-download-stop-error {
+    margin-top: 8px;
+    color: #b42318;
+    font-weight: bold;
+}
+
+.rawdata-download-warning {
+    border: 1px solid #d39e00;
+    background: #fff8e1;
+    color: #6b4f00;
+}
+
+.rawdata-download-warning-title {
+    margin-bottom: 4px;
+    font-weight: bold;
+}
+
+.rawdata-download-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.rawdata-download-stop-requested {
+    border: 1px solid #2f7fc1;
+    background: #edf7ff;
+    color: #215d8d;
+}
+
+.rawdata-download-stopped {
+    border: 1px solid #ad7c1a;
+    background: #fff8e1;
+    color: #6b4f00;
+}
+
+.rawdata-download-settings .param-card-body {
+    padding-bottom: 12px;
+}
+
+.rawdata-settings-actions {
+    margin-top: 10px;
+}
+
+.rawdata-settings-message,
+.rawdata-settings-error {
+    margin-top: 8px;
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+.rawdata-settings-message {
+    color: #198754;
+}
+
+.rawdata-settings-error {
+    color: #dc3545;
 }
 
 .model-building-area {

@@ -32,6 +32,8 @@ var AvmPage;
     let avmAutoEncoderInfo = new AvmAutoEncoderInfo();
     let index = [];
     let warningId = [];
+    let rawDataDownloadGuard = null;
+    let rawDataPollingTimer = null;
     function Main() {
         new Vue({
             el: "#divVue",
@@ -129,26 +131,86 @@ var AvmPage;
                 trainingCount: 0,
                 isCheckedTestingData: false,
                 //能源預測
-                num_epoches: 300,
-                patience: 50,
-                scheduler_patience: 30,
+                num_epoches: 120,
+                patience: 70,
+                scheduler_patience: 40,
                 model_set_proportion: 2,
                 threshold_scaler: 1,
                 split: 0.2,
-                seq_len: 24,
-                forecasting_len: 3,
+                seq_len: 180,
+                forecasting_len: 300,
                 finetune_time_max: 10,
                 fine_tune_split: 0.25,
                 fine_tune_len: 1440,
                 fine_tune_lr_m1: 0.0005,
                 fine_tune_lr_m2: 0.0005,
                 fine_tune_lr_gsi: 0.0003,
-                n_trials: 5,
-                num_epoches_search: 100,
+                n_trials: 1,
+                num_epoches_search: 120,
+                // 入廠流量預測共用前處理與微調參數
+                fine_tune_len_seconds: 259200,
+                fine_tune_len_steps: 259200,
+                finetune_cooldown_points: 45,
+                finetune_retrain_times: 3,
+                flow_zero_threshold: 0.5,
+                fine_tune_batch_size_m1: 4096,
+                fine_tune_batch_size_m2: 4096,
+                downsample_seconds: 1,
+                seq_len_steps: 180,
+                forecasting_len_steps: 300,
+                patch_len: 30,
+                patch_len_steps: 30,
+                stride_seconds: 1,
+                stride_steps: 1,
+                max_samples: 1000000,
+                predict_residual: true,
+                weight_decay: 0.03,
+                gradient_clip_norm: 1.0,
                 param_grid_hidden_size: [2, 4, 6],
                 param_grid_num_layers: [1],
                 param_grid_lr: [0.001],
                 param_grid_batch_size: [256],
+                selected_model_config: "m1",
+                // 入廠流量預測模型 m1（Transformer）
+                m1_model_type: "transformer",
+                m1_batch_size: 4096,
+                m1_downsample_seconds: 1,
+                m1_forecasting_len: 300,
+                m1_forecasting_len_steps: 300,
+                m1_hidden_size: 24,
+                m1_lr: 0.0005,
+                m1_max_epochs: 300,
+                m1_num_heads: 1,
+                m1_num_layers: 6,
+                m1_patch_len: 30,
+                m1_patch_len_steps: 30,
+                m1_patience: 70,
+                m1_scheduler_patience: 20,
+                m1_seq_len: 180,
+                m1_seq_len_steps: 180,
+                m1_stride_seconds: 1,
+                m1_stride_steps: 1,
+                m1_weight_decay: 0.002,
+                // 入廠流量預測模型 m2（LSTM）
+                m2_model_type: "lstm",
+                m2_batch_size: 4096,
+                m2_downsample_seconds: 1,
+                m2_forecasting_len: 300,
+                m2_forecasting_len_steps: 300,
+                m2_hidden_size: 40,
+                m2_lr: 0.005,
+                m2_max_epochs: 300,
+                m2_num_heads: 2,
+                m2_num_layers: 10,
+                m2_patch_len: 30,
+                m2_patch_len_steps: 30,
+                m2_patience: 70,
+                m2_scheduler_patience: 40,
+                m2_seq_len: 180,
+                m2_seq_len_steps: 180,
+                m2_stride_seconds: 1,
+                m2_stride_steps: 1,
+                m2_weight_decay: 0.03,
                 gsi_param_grid_hidden_size: [64, 128],
                 gsi_param_grid_latend_dim: [3],
                 gsi_param_grid_dropout: [0.1],
@@ -240,11 +302,26 @@ var AvmPage;
                 rawDataDownloadStatus: "",
                 rawDataCurrentBatch: 0,
                 rawDataTotalBatch: 0,
+                rawDataCompletedBatches: 0,
+                rawDataTotalBatches: 0,
+                rawDataRemainingBatches: 0,
+                rawDataWarningVisible: false,
+                rawDataWarningReason: "",
+                rawDataWaitedText: "00:00:00",
+                rawDataStopSubmitting: false,
+                rawDataStopRequested: false,
+                rawDataStopError: "",
+                rawDataPartialResult: false,
+                rawDataWarningAfterSeconds: RawDataDownloadGuard.DefaultWarningAfterSeconds,
+                rawDataReminderIntervalSeconds: RawDataDownloadGuard.DefaultReminderIntervalSeconds,
+                rawDataSettingsMessage: "",
+                rawDataSettingsError: "",
                 modelProcessVisible: false,
                 modelProcessStage: "",
                 modelProcessTitle: "",
                 modelProcessMessage: "",
                 modelProcessError: "",
+                modelApiNoResponse: false,
                 modelNameError: "",
                 modelUploading: false,
                 modelUploadResult: ""
@@ -257,6 +334,15 @@ var AvmPage;
                 this.combinationSelection();
                 taskId = DataCollection.GetGuid();
                 this.taskId = taskId;
+                const rawDataSettings = RawDataDownloadGuard.loadSettings();
+                this.rawDataWarningAfterSeconds =
+                    rawDataSettings.settings.warningAfterSeconds;
+                this.rawDataReminderIntervalSeconds =
+                    rawDataSettings.settings.reminderIntervalSeconds;
+                if (!rawDataSettings.isValid) {
+                    this.rawDataSettingsError =
+                        rawDataSettings.message;
+                }
             },
             methods: {
                 combinationSelection: function () {
@@ -1338,13 +1424,6 @@ var AvmPage;
                                 throw new Error("Filter Rule 與 Indicator Rule 數量不一致。");
                             }
                             // ==========================================
-                            // AVM III Feature
-                            // ==========================================
-                            const featurePayload = this.featurePayload();
-                            featurePayload.AvmIIIFeature.taskId =
-                                taskId;
-                            yield BuildModel.SaveFeatureTxt(featurePayload.AvmIIIFeature);
-                            // ==========================================
                             // Model Config
                             // ==========================================
                             const payload = this.buildPayload();
@@ -1367,7 +1446,10 @@ var AvmPage;
                                     String(dcpResult));
                             }
                             kendo.ui.progress($loadingTarget, false);
-                            yield this.waitForRawDataDownload();
+                            const rawDataCompleted = yield this.waitForRawDataDownload();
+                            if (!rawDataCompleted) {
+                                return;
+                            }
                             // ==========================================
                             // 建立建模需要的 TrainingData
                             // ==========================================
@@ -1407,12 +1489,20 @@ var AvmPage;
                             // Build Model
                             // ==========================================
                             vm.modelProcessStage = "Model";
+                            vm.modelApiNoResponse = false;
                             vm.modelProcessTitle = "Building Model";
                             vm.modelProcessMessage = "模型建立中，請稍候...";
                             vm.info = "Starting...";
                             const result = yield BuildModel.BuildModel(taskId);
                             console.log("Build Model Result：", result);
+                            // 顯示建模 API 是否有回應，避免畫面只停留在「模型建立中」。
+                            if (result && result.msg) {
+                                vm.modelProcessMessage = result.success === false
+                                    ? "建模 API 回應失敗：" + String(result.msg)
+                                    : "建模 API 已回應，正在等待模型建立完成...";
+                            }
                             if (!result || result.success === false) {
+                                vm.modelApiNoResponse = !result || result.msg === "API 無回應";
                                 throw new Error(result && result.msg
                                     ? result.msg
                                     : "Build Model 啟動失敗。");
@@ -1460,9 +1550,18 @@ var AvmPage;
                         }
                         catch (error) {
                             console.error("Build AVM Model Error：", error);
-                            alert(error instanceof Error
-                                ? error.message
-                                : "Build Model Failed.");
+                            if (vm.modelApiNoResponse) {
+                                vm.modelProcessStage = "Failed";
+                                vm.modelProcessTitle = "Build Model Failed";
+                                vm.modelProcessMessage = "建模 API 無法連線";
+                                vm.modelProcessError = "API 無回應";
+                            }
+                            // API 無回應時由建模視窗顯示訊息與關閉按鈕，避免再跳出瀏覽器 alert。
+                            if (!vm.modelApiNoResponse) {
+                                alert(error instanceof Error
+                                    ? error.message
+                                    : "Build Model Failed.");
+                            }
                         }
                         finally {
                             /*
@@ -1473,32 +1572,17 @@ var AvmPage;
                         }
                     });
                 },
-                featurePayload() {
-                    let numerical = [];
-                    let target = [];
-                    for (let i = 0; i < variablegroupsDCP.length; i++) {
-                        if (variablegroupsDCP[i].variablegroupname.includes("PROCESS")) {
-                            for (let j = 0; j < variablegroupsDCP[i].variables.length; j++) {
-                                numerical.push(variablegroupsDCP[i].variables[j].variablename);
-                            }
-                        }
-                        if (variablegroupsDCP[i].variablegroupname.includes("METROLOGY")) {
-                            for (let j = 0; j < variablegroupsDCP[i].variables.length; j++) {
-                                target.push(variablegroupsDCP[i].variables[j].variablename);
-                            }
-                        }
-                    }
-                    return {
-                        AvmIIIFeature: {
-                            numerical: numerical,
-                            target: target
-                        }
-                    };
-                },
                 buildPayload() {
                     return {
                         energy: {
                             finetune_time_max: this.finetune_time_max,
+                            fine_tune_len_seconds: this.fine_tune_len_seconds,
+                            fine_tune_len_steps: this.fine_tune_len_steps,
+                            finetune_cooldown_points: this.finetune_cooldown_points,
+                            finetune_retrain_times: this.finetune_retrain_times,
+                            flow_zero_threshold: this.flow_zero_threshold,
+                            fine_tune_batch_size_m1: this.fine_tune_batch_size_m1,
+                            fine_tune_batch_size_m2: this.fine_tune_batch_size_m2,
                             threshold_scaler: this.threshold_scaler,
                             split: this.split,
                             fine_tune_split: this.fine_tune_split,
@@ -1507,8 +1591,19 @@ var AvmPage;
                             fine_tune_lr_m2: this.fine_tune_lr_m2,
                             fine_tune_lr_gsi: this.fine_tune_lr_gsi,
                             fine_tune_len: this.fine_tune_len,
+                            downsample_seconds: this.downsample_seconds,
                             seq_len: this.seq_len,
+                            seq_len_steps: this.seq_len_steps,
                             forecasting_len: this.forecasting_len,
+                            forecasting_len_steps: this.forecasting_len_steps,
+                            patch_len: this.patch_len,
+                            patch_len_steps: this.patch_len_steps,
+                            stride_seconds: this.stride_seconds,
+                            stride_steps: this.stride_steps,
+                            max_samples: this.max_samples,
+                            predict_residual: this.predict_residual,
+                            weight_decay: this.weight_decay,
+                            gradient_clip_norm: this.gradient_clip_norm,
                             n_trials: this.n_trials,
                             patience: this.patience,
                             scheduler_patience: this.scheduler_patience,
@@ -1519,6 +1614,48 @@ var AvmPage;
                                 num_layers: this.param_grid_num_layers,
                                 lr: this.param_grid_lr,
                                 batch_size: this.param_grid_batch_size
+                            },
+                            m1: {
+                                model_type: this.m1_model_type,
+                                batch_size: this.m1_batch_size,
+                                downsample_seconds: this.m1_downsample_seconds,
+                                forecasting_len: this.m1_forecasting_len,
+                                forecasting_len_steps: this.m1_forecasting_len_steps,
+                                hidden_size: this.m1_hidden_size,
+                                lr: this.m1_lr,
+                                max_epochs: this.m1_max_epochs,
+                                num_heads: this.m1_num_heads,
+                                num_layers: this.m1_num_layers,
+                                patch_len: this.m1_patch_len,
+                                patch_len_steps: this.m1_patch_len_steps,
+                                patience: this.m1_patience,
+                                scheduler_patience: this.m1_scheduler_patience,
+                                seq_len: this.m1_seq_len,
+                                seq_len_steps: this.m1_seq_len_steps,
+                                stride_seconds: this.m1_stride_seconds,
+                                stride_steps: this.m1_stride_steps,
+                                weight_decay: this.m1_weight_decay
+                            },
+                            m2: {
+                                model_type: this.m2_model_type,
+                                batch_size: this.m2_batch_size,
+                                downsample_seconds: this.m2_downsample_seconds,
+                                forecasting_len: this.m2_forecasting_len,
+                                forecasting_len_steps: this.m2_forecasting_len_steps,
+                                hidden_size: this.m2_hidden_size,
+                                lr: this.m2_lr,
+                                max_epochs: this.m2_max_epochs,
+                                num_heads: this.m2_num_heads,
+                                num_layers: this.m2_num_layers,
+                                patch_len: this.m2_patch_len,
+                                patch_len_steps: this.m2_patch_len_steps,
+                                patience: this.m2_patience,
+                                scheduler_patience: this.m2_scheduler_patience,
+                                seq_len: this.m2_seq_len,
+                                seq_len_steps: this.m2_seq_len_steps,
+                                stride_seconds: this.m2_stride_seconds,
+                                stride_steps: this.m2_stride_steps,
+                                weight_decay: this.m2_weight_decay
                             },
                             gsi_param_grid: {
                                 hidden_size: this.gsi_param_grid_hidden_size,
@@ -1890,8 +2027,7 @@ var AvmPage;
                             .eq(this.avmItemPage - 1)
                             .removeClass("setp-working");
                         // Step 2：Variable Selection
-                        if (this.avmItemPage == 1 &&
-                            this.variablePageInitial == 0) {
+                        if (this.avmItemPage == 1 && this.variablePageInitial == 0) {
                             this.variablePageInitial = 1;
                             this.variablesSelection();
                         }
@@ -2066,6 +2202,73 @@ var AvmPage;
                         }
                     }
                 },
+                saveRawDataDownloadSettings: function () {
+                    const validation = RawDataDownloadGuard
+                        .validateSettings(this.rawDataWarningAfterSeconds, this.rawDataReminderIntervalSeconds);
+                    this.rawDataWarningAfterSeconds =
+                        validation.settings.warningAfterSeconds;
+                    this.rawDataReminderIntervalSeconds =
+                        validation.settings.reminderIntervalSeconds;
+                    if (!validation.isValid) {
+                        this.rawDataSettingsError =
+                            validation.message;
+                        this.rawDataSettingsMessage = "";
+                        RawDataDownloadGuard.saveSettings(validation.settings);
+                        return;
+                    }
+                    RawDataDownloadGuard.saveSettings(validation.settings);
+                    this.rawDataSettingsError = "";
+                    this.rawDataSettingsMessage =
+                        "RawData 等待提醒設定已儲存於此瀏覽器。";
+                },
+                continueRawDataDownloadWaiting: function () {
+                    if (rawDataDownloadGuard) {
+                        rawDataDownloadGuard
+                            .continueWaiting();
+                    }
+                    this.rawDataWarningVisible = false;
+                    this.rawDataWarningReason = "";
+                    this.rawDataWaitedText = "00:00:00";
+                    this.modelProcessMessage =
+                        "已繼續等待目前下載工作，不會重複建立 Task。";
+                },
+                requestStopRawDataDownload: function () {
+                    return __awaiter(this, void 0, void 0, function* () {
+                        if (this.rawDataStopSubmitting ||
+                            this.rawDataStopRequested) {
+                            return;
+                        }
+                        this.rawDataStopSubmitting = true;
+                        try {
+                            const result = yield DataCollection
+                                .RequestStopRawDataDownload(taskId);
+                            if (!result || result.success !== true) {
+                                throw new Error(result && result.message
+                                    ? result.message
+                                    : "送出停止要求失敗");
+                            }
+                            if (rawDataDownloadGuard) {
+                                rawDataDownloadGuard
+                                    .markStopRequested();
+                            }
+                            this.rawDataStopRequested = true;
+                            this.rawDataWarningVisible = false;
+                            this.rawDataWarningReason = "";
+                            this.modelProcessMessage =
+                                result.message ||
+                                    "已送出停止要求，系統會完成目前封包後停止。";
+                        }
+                        catch (error) {
+                            this.rawDataStopError =
+                                error instanceof Error
+                                    ? error.message
+                                    : "送出停止要求失敗";
+                        }
+                        finally {
+                            this.rawDataStopSubmitting = false;
+                        }
+                    });
+                },
                 waitForRawDataDownload: function () {
                     return __awaiter(this, void 0, void 0, function* () {
                         const vm = this;
@@ -2101,6 +2304,49 @@ var AvmPage;
                             0;
                         vm.rawDataTotalBatch =
                             0;
+                        vm.rawDataCompletedBatches = 0;
+                        vm.rawDataTotalBatches = 0;
+                        vm.rawDataRemainingBatches = 0;
+                        vm.rawDataWarningVisible = false;
+                        vm.rawDataWarningReason = "";
+                        vm.rawDataWaitedText = "00:00:00";
+                        vm.rawDataStopSubmitting = false;
+                        vm.rawDataStopRequested = false;
+                        vm.rawDataStopError = "";
+                        vm.rawDataPartialResult = false;
+                        const settingsValidation = RawDataDownloadGuard.validateSettings(vm.rawDataWarningAfterSeconds, vm.rawDataReminderIntervalSeconds);
+                        vm.rawDataWarningAfterSeconds =
+                            settingsValidation.settings.warningAfterSeconds;
+                        vm.rawDataReminderIntervalSeconds =
+                            settingsValidation.settings.reminderIntervalSeconds;
+                        if (!settingsValidation.isValid) {
+                            vm.rawDataSettingsError =
+                                settingsValidation.message;
+                        }
+                        rawDataDownloadGuard =
+                            new RawDataDownloadGuard.Guard({
+                                warningAfterMilliseconds: settingsValidation.settings
+                                    .warningAfterSeconds *
+                                    1000,
+                                reminderIntervalMilliseconds: settingsValidation.settings
+                                    .reminderIntervalSeconds *
+                                    1000,
+                                onWarning: function (snapshot) {
+                                    vm.rawDataWarningVisible = true;
+                                    vm.rawDataWarningReason =
+                                        snapshot.reason ===
+                                            "NoProgress"
+                                            ? "下載進度在等待期間未前進。"
+                                            : "下載進度 API 暫時無有效回應。";
+                                    vm.rawDataWaitedText =
+                                        RawDataDownloadGuard
+                                            .formatDuration(snapshot.waitedSeconds);
+                                    vm.rawDataCompletedBatches =
+                                        snapshot.completedBatches;
+                                    vm.rawDataTotalBatches =
+                                        snapshot.totalBatches;
+                                }
+                            });
                         // 讓 Vue 先把中央彈窗畫出來
                         yield vm.$nextTick();
                         // ==========================================
@@ -2130,130 +2376,245 @@ var AvmPage;
                         // ==========================================
                         // 每秒查詢下載進度
                         // ==========================================
-                        yield new Promise(function (resolve, reject) {
+                        return yield new Promise(function (resolve, reject) {
                             let polling = false;
-                            const timer = window.setInterval(function () {
-                                return __awaiter(this, void 0, void 0, function* () {
-                                    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m;
-                                    /*
-                                     * 避免上一個 AJAX 還沒結束，
-                                     * 下一個輪詢又送出去。
-                                     */
-                                    if (polling) {
-                                        return;
-                                    }
-                                    polling =
-                                        true;
-                                    try {
-                                        const result = yield DataCollection
-                                            .GetRawDataDownloadProgress(taskId);
-                                        if (!result ||
-                                            result.success !== true) {
-                                            vm.modelProcessMessage =
-                                                result &&
-                                                    result.message
-                                                    ? result.message
-                                                    : "暫時無法取得下載進度";
-                                            return;
-                                        }
-                                        const job = result.job;
-                                        if (!job) {
-                                            vm.modelProcessMessage =
-                                                "尚未取得下載工作狀態";
-                                            return;
+                            if (rawDataPollingTimer !== null) {
+                                window.clearInterval(rawDataPollingTimer);
+                            }
+                            rawDataPollingTimer =
+                                window.setInterval(function () {
+                                    return __awaiter(this, void 0, void 0, function* () {
+                                        if (rawDataDownloadGuard) {
+                                            rawDataDownloadGuard.tick();
+                                            vm.rawDataWaitedText =
+                                                RawDataDownloadGuard
+                                                    .formatDuration(rawDataDownloadGuard
+                                                    .getWaitedSeconds());
                                         }
                                         /*
-                                         * 同時支援：
-                                         * C# 預設 PascalCase
-                                         * 或 camelCase JSON
+                                         * 避免上一個 AJAX 還沒結束，
+                                         * 下一個輪詢又送出去。
                                          */
-                                        const percent = (_b = (_a = job.Percent) !== null && _a !== void 0 ? _a : job.percent) !== null && _b !== void 0 ? _b : 0;
-                                        const message = (_d = (_c = job.Message) !== null && _c !== void 0 ? _c : job.message) !== null && _d !== void 0 ? _d : "";
-                                        const status = (_f = (_e = job.Status) !== null && _e !== void 0 ? _e : job.status) !== null && _f !== void 0 ? _f : "";
-                                        const currentBatch = (_h = (_g = job.CurrentBatch) !== null && _g !== void 0 ? _g : job.currentBatch) !== null && _h !== void 0 ? _h : 0;
-                                        const totalBatch = (_k = (_j = job.TotalBatch) !== null && _j !== void 0 ? _j : job.totalBatch) !== null && _k !== void 0 ? _k : 0;
-                                        const errorMessage = (_m = (_l = job.Error) !== null && _l !== void 0 ? _l : job.error) !== null && _m !== void 0 ? _m : "";
-                                        // ==================================
-                                        // 更新中央彈窗
-                                        // ==================================
-                                        vm.rawDataDownloadPercent =
-                                            Number(percent);
-                                        vm.rawDataDownloadMessage =
-                                            String(message);
-                                        vm.rawDataDownloadStatus =
-                                            String(status);
-                                        vm.rawDataCurrentBatch =
-                                            Number(currentBatch);
-                                        vm.rawDataTotalBatch =
-                                            Number(totalBatch);
-                                        vm.modelProcessStage =
-                                            "RawData";
-                                        vm.modelProcessTitle =
-                                            "Downloading RawData";
-                                        vm.modelProcessMessage =
-                                            String(message ||
-                                                "正在下載 RawData...");
-                                        // ==================================
-                                        // 下載完成
-                                        // ==================================
-                                        if (String(status)
-                                            .toLowerCase() ===
-                                            "completed") {
-                                            window.clearInterval(timer);
-                                            vm.rawDataDownloadPercent =
-                                                100;
-                                            vm.rawDataDownloadStatus =
-                                                "Completed";
-                                            vm.modelProcessMessage =
-                                                "RawData 下載完成，準備建立模型...";
-                                            resolve();
+                                        if (polling) {
                                             return;
                                         }
-                                        // ==================================
-                                        // 下載失敗
-                                        // ==================================
-                                        if (String(status)
-                                            .toLowerCase() ===
-                                            "failed") {
-                                            window.clearInterval(timer);
-                                            vm.rawDataDownloadStatus =
-                                                "Failed";
-                                            vm.modelProcessStage =
-                                                "Failed";
-                                            vm.modelProcessTitle =
-                                                "RawData Download Failed";
-                                            vm.modelProcessMessage =
-                                                "RawData 下載失敗";
-                                            vm.modelProcessError =
-                                                String(errorMessage ||
-                                                    message ||
-                                                    "RawData 下載失敗");
-                                            reject(new Error(vm.modelProcessError));
-                                            return;
-                                        }
-                                    }
-                                    catch (error) {
-                                        window.clearInterval(timer);
-                                        vm.rawDataDownloadStatus =
-                                            "Failed";
-                                        vm.modelProcessStage =
-                                            "Failed";
-                                        vm.modelProcessTitle =
-                                            "RawData Download Failed";
-                                        vm.modelProcessMessage =
-                                            "取得 RawData 進度失敗";
-                                        vm.modelProcessError =
-                                            error instanceof Error
-                                                ? error.message
-                                                : "取得 RawData 進度失敗";
-                                        reject(error);
-                                    }
-                                    finally {
                                         polling =
-                                            false;
-                                    }
-                                });
-                            }, 1000);
+                                            true;
+                                        try {
+                                            const result = yield DataCollection
+                                                .GetRawDataDownloadProgress(taskId);
+                                            if (!result ||
+                                                result.success !== true) {
+                                                if (rawDataDownloadGuard) {
+                                                    rawDataDownloadGuard
+                                                        .acceptPollFailure("InvalidProgressResponse");
+                                                }
+                                                vm.modelProcessMessage =
+                                                    result &&
+                                                        result.message
+                                                        ? result.message
+                                                        : "暫時無法取得下載進度";
+                                                return;
+                                            }
+                                            const job = result.job;
+                                            if (!job) {
+                                                if (rawDataDownloadGuard) {
+                                                    rawDataDownloadGuard
+                                                        .acceptPollFailure("InvalidProgressResponse");
+                                                }
+                                                vm.modelProcessMessage =
+                                                    "尚未取得下載工作狀態";
+                                                return;
+                                            }
+                                            /*
+                                             * 同時支援：
+                                             * C# 預設 PascalCase
+                                             * 或 camelCase JSON
+                                             */
+                                            const percent = job.Percent !== null &&
+                                                job.Percent !== undefined
+                                                ? job.Percent
+                                                : (job.percent !== null &&
+                                                    job.percent !== undefined
+                                                    ? job.percent
+                                                    : 0);
+                                            const message = job.Message !== null &&
+                                                job.Message !== undefined
+                                                ? job.Message
+                                                : (job.message !== null &&
+                                                    job.message !== undefined
+                                                    ? job.message
+                                                    : "");
+                                            const status = job.Status !== null &&
+                                                job.Status !== undefined
+                                                ? job.Status
+                                                : (job.status !== null &&
+                                                    job.status !== undefined
+                                                    ? job.status
+                                                    : "");
+                                            const currentBatch = job.CurrentBatch !== null &&
+                                                job.CurrentBatch !== undefined
+                                                ? job.CurrentBatch
+                                                : (job.currentBatch !== null &&
+                                                    job.currentBatch !== undefined
+                                                    ? job.currentBatch
+                                                    : 0);
+                                            const totalBatch = job.TotalBatch !== null &&
+                                                job.TotalBatch !== undefined
+                                                ? job.TotalBatch
+                                                : (job.totalBatch !== null &&
+                                                    job.totalBatch !== undefined
+                                                    ? job.totalBatch
+                                                    : 0);
+                                            const completedBatches = job.CompletedBatches !== null &&
+                                                job.CompletedBatches !== undefined
+                                                ? job.CompletedBatches
+                                                : (job.completedBatches !== null &&
+                                                    job.completedBatches !== undefined
+                                                    ? job.completedBatches
+                                                    : 0);
+                                            const totalBatches = job.TotalBatches !== null &&
+                                                job.TotalBatches !== undefined
+                                                ? job.TotalBatches
+                                                : (job.totalBatches !== null &&
+                                                    job.totalBatches !== undefined
+                                                    ? job.totalBatches
+                                                    : totalBatch);
+                                            const remainingBatches = job.RemainingBatches !== null &&
+                                                job.RemainingBatches !== undefined
+                                                ? job.RemainingBatches
+                                                : (job.remainingBatches !== null &&
+                                                    job.remainingBatches !== undefined
+                                                    ? job.remainingBatches
+                                                    : Math.max(0, Number(totalBatches) -
+                                                        Number(completedBatches)));
+                                            const stopRequested = job.StopRequested === true ||
+                                                job.stopRequested === true ||
+                                                String(status)
+                                                    .toLowerCase() ===
+                                                    "stoprequested";
+                                            const errorMessage = job.Error !== null &&
+                                                job.Error !== undefined
+                                                ? job.Error
+                                                : (job.error !== null &&
+                                                    job.error !== undefined
+                                                    ? job.error
+                                                    : "");
+                                            if (rawDataDownloadGuard) {
+                                                rawDataDownloadGuard
+                                                    .acceptProgress({
+                                                    completedBatches: Number(completedBatches),
+                                                    totalBatches: Number(totalBatches),
+                                                    progressPercent: Number(percent),
+                                                    status: String(status),
+                                                    stopRequested: stopRequested
+                                                });
+                                            }
+                                            // ==================================
+                                            // 更新中央彈窗
+                                            // ==================================
+                                            vm.rawDataDownloadPercent =
+                                                Number(percent);
+                                            vm.rawDataDownloadMessage =
+                                                String(message);
+                                            vm.rawDataDownloadStatus =
+                                                String(status);
+                                            vm.rawDataCurrentBatch =
+                                                Number(currentBatch);
+                                            vm.rawDataTotalBatch =
+                                                Number(totalBatch);
+                                            vm.rawDataCompletedBatches =
+                                                Number(completedBatches);
+                                            vm.rawDataTotalBatches =
+                                                Number(totalBatches);
+                                            vm.rawDataRemainingBatches =
+                                                Number(remainingBatches);
+                                            vm.rawDataStopRequested =
+                                                stopRequested;
+                                            vm.modelProcessStage =
+                                                "RawData";
+                                            vm.modelProcessTitle =
+                                                "Downloading RawData";
+                                            vm.modelProcessMessage =
+                                                String(message ||
+                                                    "正在下載 RawData...");
+                                            // ==================================
+                                            // 下載完成
+                                            // ==================================
+                                            if (String(status)
+                                                .toLowerCase() ===
+                                                "completed") {
+                                                window.clearInterval(rawDataPollingTimer);
+                                                rawDataPollingTimer = null;
+                                                vm.rawDataDownloadPercent =
+                                                    100;
+                                                vm.rawDataDownloadStatus =
+                                                    "Completed";
+                                                vm.modelProcessMessage =
+                                                    "RawData 下載完成，準備建立模型...";
+                                                resolve(true);
+                                                return;
+                                            }
+                                            if (String(status)
+                                                .toLowerCase() ===
+                                                "stopped") {
+                                                window.clearInterval(rawDataPollingTimer);
+                                                rawDataPollingTimer = null;
+                                                vm.rawDataDownloadStatus =
+                                                    "Stopped";
+                                                vm.rawDataPartialResult =
+                                                    true;
+                                                vm.rawDataWarningVisible =
+                                                    false;
+                                                vm.modelProcessTitle =
+                                                    "RawData Download Stopped";
+                                                vm.modelProcessMessage =
+                                                    "下載已停止（部分完成）。已完成 " +
+                                                        vm.rawDataCompletedBatches +
+                                                        " / " +
+                                                        vm.rawDataTotalBatches +
+                                                        " 批；已完成資料已保留。";
+                                                resolve(false);
+                                                return;
+                                            }
+                                            // ==================================
+                                            // 下載失敗
+                                            // ==================================
+                                            if (String(status)
+                                                .toLowerCase() ===
+                                                "failed") {
+                                                window.clearInterval(rawDataPollingTimer);
+                                                rawDataPollingTimer = null;
+                                                vm.rawDataDownloadStatus =
+                                                    "Failed";
+                                                vm.modelProcessStage =
+                                                    "Failed";
+                                                vm.modelProcessTitle =
+                                                    "RawData Download Failed";
+                                                vm.modelProcessMessage =
+                                                    "RawData 下載失敗";
+                                                vm.modelProcessError =
+                                                    String(errorMessage ||
+                                                        message ||
+                                                        "RawData 下載失敗");
+                                                reject(new Error(vm.modelProcessError));
+                                                return;
+                                            }
+                                        }
+                                        catch (error) {
+                                            if (rawDataDownloadGuard) {
+                                                rawDataDownloadGuard
+                                                    .acceptPollFailure("ProgressApiUnavailable");
+                                            }
+                                            vm.modelProcessMessage =
+                                                "暫時無法取得下載進度，仍會保留同一個下載工作。";
+                                        }
+                                        finally {
+                                            polling =
+                                                false;
+                                        }
+                                    });
+                                }, 1000);
                         });
                     });
                 },
@@ -2326,6 +2687,7 @@ var AvmPage;
                         "";
                     this.modelProcessError =
                         "";
+                    this.modelApiNoResponse = false;
                     this.modelName =
                         "";
                     this.modelNameError =

@@ -291,6 +291,7 @@
     <Compile Include="Models\DBInfo.cs" />
     <Compile Include="Models\Managers\ChartFileReader.cs" />
     <Compile Include="Models\Managers\RawDataDownloadStatusManager.cs" />
+    <Compile Include="Models\Managers\RawDataDownloadControlManager.cs" />
     <Compile Include="Models\MCCImporter.cs" />
     <Compile Include="Models\MCCModel.cs" />
     <Compile Include="Models\Managers\JsonFileManager.cs" />
@@ -774,6 +775,7 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Scripts\dist\DataCollection.js.map" />
+    <Content Include="Scripts\dist\RawDataDownloadGuard.js" />
     <Content Include="Scripts\dist\struct\AvmModuleInfo.js" />
     <Content Include="Scripts\dist\struct\combination.js.map" />
     <Content Include="Scripts\dist\struct\PresetBlob.js" />
@@ -793,6 +795,7 @@
     </None>
     <None Include="Properties\PublishProfiles\FolderProfile.pubxml" />
     <Content Include="Scripts\dist\struct\PresetBlob.js.map" />
+    <Content Include="Scripts\dist\RawDataDownloadGuard.js.map" />
     <None Include="Scripts\jquery-3.3.1.intellisense.js" />
     <Content Include="Scripts\dist\struct\combination.js" />
     <Content Include="Scripts\dist\struct\Variables.js" />
@@ -847,6 +850,7 @@
   <ItemGroup>
     <TypeScriptCompile Include="Scripts\app\BuildModel.ts" />
     <TypeScriptCompile Include="Scripts\app\DataCollection.ts" />
+    <TypeScriptCompile Include="Scripts\app\RawDataDownloadGuard.ts" />
     <TypeScriptCompile Include="Scripts\app\KendoApi.ts" />
     <TypeScriptCompile Include="Scripts\app\Method.ts" />
     <TypeScriptCompile Include="Scripts\app\AvmPage.ts" />

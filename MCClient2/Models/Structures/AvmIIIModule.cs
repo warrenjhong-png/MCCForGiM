@@ -51,6 +51,13 @@ namespace MCClient2.Models.Structures
     public class EnergyModel
     {
         public int finetune_time_max { get; set; }
+        public int fine_tune_len_seconds { get; set; }
+        public int fine_tune_len_steps { get; set; }
+        public int finetune_cooldown_points { get; set; }
+        public int finetune_retrain_times { get; set; }
+        public double flow_zero_threshold { get; set; }
+        public int fine_tune_batch_size_m1 { get; set; }
+        public int fine_tune_batch_size_m2 { get; set; }
         public double threshold_scaler { get; set; }
         public double split { get; set; }
         public double fine_tune_split { get; set; }
@@ -61,8 +68,19 @@ namespace MCClient2.Models.Structures
         public double fine_tune_lr_gsi { get; set; }
 
         public int fine_tune_len { get; set; }
+        public int downsample_seconds { get; set; }
         public int seq_len { get; set; }
+        public int seq_len_steps { get; set; }
         public int forecasting_len { get; set; }
+        public int forecasting_len_steps { get; set; }
+        public int patch_len { get; set; }
+        public int patch_len_steps { get; set; }
+        public int stride_seconds { get; set; }
+        public int stride_steps { get; set; }
+        public int max_samples { get; set; }
+        public bool predict_residual { get; set; }
+        public double weight_decay { get; set; }
+        public double gradient_clip_norm { get; set; }
 
         public int n_trials { get; set; }
         public int patience { get; set; }
@@ -72,6 +90,31 @@ namespace MCClient2.Models.Structures
 
         public ParamGrid param_grid { get; set; }
         public GsiParamGrid gsi_param_grid { get; set; }
+        public ModelConfig m1 { get; set; }
+        public ModelConfig m2 { get; set; }
+    }
+
+    public class ModelConfig
+    {
+        public string model_type { get; set; }
+        public int batch_size { get; set; }
+        public int downsample_seconds { get; set; }
+        public int forecasting_len { get; set; }
+        public int forecasting_len_steps { get; set; }
+        public int hidden_size { get; set; }
+        public double lr { get; set; }
+        public int max_epochs { get; set; }
+        public int num_heads { get; set; }
+        public int num_layers { get; set; }
+        public int patch_len { get; set; }
+        public int patch_len_steps { get; set; }
+        public int patience { get; set; }
+        public int scheduler_patience { get; set; }
+        public int seq_len { get; set; }
+        public int seq_len_steps { get; set; }
+        public int stride_seconds { get; set; }
+        public int stride_steps { get; set; }
+        public double weight_decay { get; set; }
     }
 
     public class ParamGrid

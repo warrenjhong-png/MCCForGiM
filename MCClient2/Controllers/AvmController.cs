@@ -6,6 +6,7 @@ using MCClient2.Models.Structures;
 using Microsoft.Ajax.Utilities;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using NLog.Targets;
 using System;
 using System.Collections.Generic;
@@ -314,6 +315,20 @@ namespace MCClient2.Controllers
                     });
                 }
 
+                string taskDirectory;
+
+                if (!RawDataDownloadControlManager
+                    .TryGetTaskDirectory(
+                        input.TaskId,
+                        out taskDirectory))
+                {
+                    return Json(new
+                    {
+                        success = false,
+                        message = "TaskId 無效"
+                    });
+                }
+
                 if (input.EndTime <= input.StartTime)
                 {
                     return Json(new
@@ -356,6 +371,27 @@ namespace MCClient2.Controllers
                     });
                 }
 
+                var existingJob =
+                    RawDataDownloadStatusManager
+                        .Read(input.TaskId);
+
+                if (existingJob != null &&
+                    !RawDataDownloadControlManager
+                        .IsTerminalStatus(existingJob.Status))
+                {
+                    return Json(new
+                    {
+                        success = true,
+                        jobId = existingJob.JobId,
+                        taskId = input.TaskId,
+                        status = existingJob.Status,
+                        message = "既有 RawData 下載工作仍在執行"
+                    });
+                }
+
+                RawDataDownloadControlManager
+                    .ClearForNewTask(input.TaskId);
+
                 string jobId =
                     Guid.NewGuid().ToString();
 
@@ -368,7 +404,8 @@ namespace MCClient2.Controllers
                         Phase = "Waiting",
                         Message = "等待下載",
                         Percent = 0,
-                        StartTime = DateTime.Now
+                        StartTime = DateTime.Now,
+                        LastProgressAtUtc = DateTime.UtcNow
                     };
 
                 RawDataDownloadStatusManager.Save(job);
@@ -387,6 +424,7 @@ namespace MCClient2.Controllers
 
                             backgroundImporter
                                 .DownloadRawDataInBatches(
+                                    jobId,
                                     input.TaskId,
                                     input.StartTime,
                                     input.EndTime,
@@ -394,6 +432,19 @@ namespace MCClient2.Controllers
                                     selectedVariables,
                                     progress =>
                                     {
+                                        if (RawDataDownloadControlManager
+                                            .IsStopRequested(
+                                                progress.TaskId) &&
+                                            !RawDataDownloadControlManager
+                                                .IsTerminalStatus(
+                                                    progress.Status))
+                                        {
+                                            progress.StopRequested = true;
+                                            progress.Status = "StopRequested";
+                                            progress.Phase =
+                                                "FinishingCurrentBatch";
+                                        }
+
                                         RawDataDownloadStatusManager
                                             .Save(progress);
                                     },
@@ -402,14 +453,22 @@ namespace MCClient2.Controllers
                         }
                         catch (Exception ex)
                         {
-                            job.Status = "Failed";
-                            job.Phase = "Error";
-                            job.Message = "下載失敗";
-                            job.Error = ex.ToString();
-                            job.FinishTime = DateTime.Now;
+                            var failedJob =
+                                RawDataDownloadStatusManager
+                                    .Read(input.TaskId) ?? job;
+
+                            failedJob.Status = "Failed";
+                            failedJob.Phase = "Error";
+                            failedJob.Message = "下載失敗";
+                            failedJob.Error =
+                                "RawData 背景下載失敗，請查看伺服器日誌";
+                            failedJob.StopRequested =
+                                RawDataDownloadControlManager
+                                    .IsStopRequested(input.TaskId);
+                            failedJob.FinishTime = DateTime.Now;
 
                             RawDataDownloadStatusManager
-                                .Save(job);
+                                .Save(failedJob);
 
                             AppConstant.Logger.Error(
                                 $"RawData 背景下載失敗：{ex}"
@@ -444,6 +503,21 @@ namespace MCClient2.Controllers
         {
             try
             {
+                string taskDirectory;
+
+                if (!RawDataDownloadControlManager
+                    .TryGetTaskDirectory(
+                        taskId,
+                        out taskDirectory))
+                {
+                    return Json(new
+                    {
+                        success = false,
+                        status = "InvalidTaskId",
+                        message = "TaskId 無效"
+                    });
+                }
+
                 var job =
                     RawDataDownloadStatusManager
                         .Read(taskId);
@@ -457,9 +531,30 @@ namespace MCClient2.Controllers
                     });
                 }
 
+                if (RawDataDownloadControlManager
+                    .IsStopRequested(taskId) &&
+                    !RawDataDownloadControlManager
+                        .IsTerminalStatus(job.Status))
+                {
+                    job.StopRequested = true;
+                    job.Status = "StopRequested";
+                    job.Phase = "FinishingCurrentBatch";
+                }
+
                 return Json(new
                 {
                     success = true,
+                    taskId = job.TaskId,
+                    status = job.Status,
+                    completedBatches = job.CompletedBatches,
+                    totalBatches = job.TotalBatches,
+                    currentBatch = job.CurrentBatch,
+                    progressPercent = job.Percent,
+                    lastProgressAtUtc = job.LastProgressAtUtc,
+                    stopRequested = job.StopRequested,
+                    partialResult = job.PartialResult,
+                    message = job.Message,
+                    errorDetail = job.Error,
                     job = job
                 });
             }
@@ -469,6 +564,36 @@ namespace MCClient2.Controllers
                 {
                     success = false,
                     message = ex.Message
+                });
+            }
+        }
+
+        [HttpPost]
+        public JsonResult RequestStopRawDataDownload(string taskId)
+        {
+            try
+            {
+                var result =
+                    RawDataDownloadControlManager
+                        .RequestStop(taskId);
+
+                return Json(new
+                {
+                    success = result.Success,
+                    status = result.Status,
+                    message = result.Message
+                });
+            }
+            catch (Exception ex)
+            {
+                AppConstant.Logger.Error(
+                    "RequestStopRawDataDownload Error：" + ex);
+
+                return Json(new
+                {
+                    success = false,
+                    status = "Failed",
+                    message = "停止要求送出失敗，請稍後再試"
                 });
             }
         }
@@ -699,6 +824,44 @@ namespace MCClient2.Controllers
             AvmIndicatorRule[] avmIndicatorRules = JsonConvert.DeserializeObject<AvmIndicatorRule[]>(indicatorrules);
             AvmPointRule[] avmPointRules = JsonConvert.DeserializeObject<AvmPointRule[]>(pointrules);
 
+            foreach (AvmVariableGroup variableGroup in avmVariableGroup)
+            {
+                foreach (AvmVariable variable in variableGroup.variables)
+                {
+                    variable.fieldname = importer.GetDefField(
+                        variableGroup.metatable,
+                        variable.variablename
+                    );
+                }
+            }
+
+            // 建模 API 使用的特徵名稱必須與前處理合併後的 CSV 欄名一致：
+            // {DEFFIELD}__{VARIABLEGROUPNAME}。fieldname 是在上方查詢 DEF 後才取得，
+            // 因此由此處統一產生 feature txt，避免前端用 variablename 組出錯誤名稱。
+            List<string> numericalColumns = avmVariableGroup
+                .Where(group => string.Equals(group.io, "i", StringComparison.OrdinalIgnoreCase))
+                .SelectMany(group => (group.variables ?? new AvmVariable[0])
+                    .Select(variable => BuildQualifiedFeatureName(group, variable)))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            List<string> targetColumns = avmVariableGroup
+                .Where(group => string.Equals(group.io, "o", StringComparison.OrdinalIgnoreCase))
+                .SelectMany(group => (group.variables ?? new AvmVariable[0])
+                    .Select(variable => BuildQualifiedFeatureName(group, variable)))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (numericalColumns.Count == 0)
+            {
+                throw new InvalidOperationException("DCP 沒有可供建模使用的輸入欄位。");
+            }
+
+            if (targetColumns.Count == 0)
+            {
+                throw new InvalidOperationException("DCP 沒有可供建模使用的輸出欄位。");
+            }
+
             AvmTaskInfo avmTaskInfo = new AvmTaskInfo();
 
             AvmModelInfo avmModelInfo = new AvmModelInfo();
@@ -727,10 +890,53 @@ namespace MCClient2.Controllers
             avmParameters.datacollectionplan = avmDataCollectionPlan;
             avmParameters.testingCount = testingCount;
             avmTaskInfo.task_id = taskId;
+            avmTaskInfo.module = "IN_FLOW_FORECAST";
             avmTaskInfo.model = avmModelInfo;
             avmTaskInfo.parameters = avmParameters;
             jsonFile.Write(taskId,AvmConfigs.TaskInfo,avmTaskInfo);
+
+            // 建模 API 會從 model\feature_name\dcp.json 讀取相同的 DCP。
+            string featureNameDir = Path.Combine(
+                PathHelper.GetDirPath(taskId),
+                "model",
+                "feature_name"
+            );
+            Directory.CreateDirectory(featureNameDir);
+            System.IO.File.WriteAllText(
+                Path.Combine(featureNameDir, "dcp.json"),
+                JsonConvert.SerializeObject(avmTaskInfo),
+                new UTF8Encoding(false)
+            );
+            System.IO.File.WriteAllText(
+                Path.Combine(featureNameDir, "numerical_cols.txt"),
+                string.Join(",", numericalColumns),
+                new UTF8Encoding(false)
+            );
+            System.IO.File.WriteAllText(
+                Path.Combine(featureNameDir, "target_col.txt"),
+                string.Join(",", targetColumns),
+                new UTF8Encoding(false)
+            );
+
             return Json("OK");
+        }
+
+        private static string BuildQualifiedFeatureName(
+            AvmVariableGroup variableGroup,
+            AvmVariable variable)
+        {
+            if (variableGroup == null ||
+                string.IsNullOrWhiteSpace(variableGroup.variablegroupname) ||
+                variable == null ||
+                string.IsNullOrWhiteSpace(variable.fieldname))
+            {
+                throw new InvalidOperationException(
+                    "DCP 特徵缺少 variablegroupname 或 fieldname，無法產生建模欄位名稱。"
+                );
+            }
+
+            return variable.fieldname.Trim() + "__" +
+                variableGroup.variablegroupname.Trim();
         }
 
         [HttpPost]
@@ -907,15 +1113,26 @@ namespace MCClient2.Controllers
                 {
                     if (payload.facility.facility_type =="air" &&payload.facility.air != null)
                     {
+                        var airConfigJson = JsonConvert.SerializeObject(
+                            payload.facility.air,
+                            Formatting.Indented
+                        );
+
                         System.IO.File.WriteAllText(
                             Path.Combine(
                                 modelDir,
                                 "air_compressor.json"
                             ),
-                            JsonConvert.SerializeObject(
-                                payload.facility.air,
-                                Formatting.Indented
-                            )
+                            airConfigJson
+                        );
+
+                        // 建模模組使用的標準位置；保留根目錄舊檔以維持相容性。
+                        System.IO.File.WriteAllText(
+                            Path.Combine(
+                                hyperParametersDir,
+                                "air_compressor_config.json"
+                            ),
+                            airConfigJson
                         );
                     }
                     else if (
@@ -924,15 +1141,25 @@ namespace MCClient2.Controllers
                         payload.facility.chiller != null
                     )
                     {
+                        var chillerConfigJson = JsonConvert.SerializeObject(
+                            payload.facility.chiller,
+                            Formatting.Indented
+                        );
+
                         System.IO.File.WriteAllText(
                             Path.Combine(
                                 modelDir,
                                 "chiller.json"
                             ),
-                            JsonConvert.SerializeObject(
-                                payload.facility.chiller,
-                                Formatting.Indented
-                            )
+                            chillerConfigJson
+                        );
+
+                        System.IO.File.WriteAllText(
+                            Path.Combine(
+                                hyperParametersDir,
+                                "chiller_config.json"
+                            ),
+                            chillerConfigJson
                         );
                     }
                 }
@@ -1034,13 +1261,26 @@ namespace MCClient2.Controllers
         {
             try
             {
-                // === 1. 準備 JSON ===
-                AvmIIITaksInfo info = new AvmIIITaksInfo();
-                info.task_number = taskId;
-                info.model_path = Server.MapPath("~/App_Data/AvmModels"); ;
-                info.config = "energy_model";
-                info.task_type = "PredictPhaseI";
-                string json = JsonConvert.SerializeObject(info);
+                // === 舊版 request 格式（保留備查） ===
+                // AvmIIITaksInfo info = new AvmIIITaksInfo();
+                // info.task_number = taskId;
+                // info.model_path = Server.MapPath("~/App_Data/AvmModels");
+                // info.config = "energy_model";
+                // info.task_type = "PredictPhaseI";
+                // string json = JsonConvert.SerializeObject(info);
+
+                // === 建模 API request：使用 DCP 完整格式 ===
+                string taskPath = PathHelper.GetDirPath(taskId);
+                string dcpPath = Path.Combine(taskPath, "model", "DCP.json");
+                if (!System.IO.File.Exists(dcpPath))
+                {
+                    throw new FileNotFoundException("找不到建模用 DCP.json", dcpPath);
+                }
+
+                JObject request = JObject.Parse(
+                    System.IO.File.ReadAllText(dcpPath));
+                request["module"] = "IN_FLOW_FORECAST";
+                string json = request.ToString(Formatting.None);
 
                 // === 2. 建 log 目錄 ===
                 string logDirPath = PathHelper.GetDirPath("Log");
@@ -1056,7 +1296,7 @@ namespace MCClient2.Controllers
                 // ex: http://127.0.0.1:5500/api/
 
                 // === 4. 呼叫 API ===
-                var response = _http.PostData("model/setup_avm_env", json);
+                var response = _http.PostData("model/build/", json);
 
 
                 // response log
@@ -1082,7 +1322,12 @@ namespace MCClient2.Controllers
                 string logDirPath = PathHelper.GetDirPath("Log");
                 System.IO.File.WriteAllText(Path.Combine(logDirPath, "api_error.txt"), e.ToString());
 
-                return Json(new { success = false, msg = e.Message });
+                return Json(new
+                {
+                    success = false,
+                    msg = "API 無回應",
+                    detail = e.Message
+                });
             }
         }
 
