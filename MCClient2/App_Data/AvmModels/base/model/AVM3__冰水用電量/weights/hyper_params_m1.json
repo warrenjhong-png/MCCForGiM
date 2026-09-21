@@ -1,0 +1,9 @@
+{
+    "input_size_p": 46,
+    "input_size_f": 2,
+    "output_size": 1,
+    "hidden_size": 6,
+    "num_layers": 1,
+    "learning_rate": 0.001,
+    "batch_size": 256
+}

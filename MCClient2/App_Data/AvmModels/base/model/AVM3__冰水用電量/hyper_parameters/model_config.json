@@ -1,0 +1,31 @@
+{
+  "finetune_time_max": 10,
+  "threshold_scaler": 1, 
+  "split": 0.2,
+  "fine_tune_split": 0.25,
+  "model_set_proportion": 2,
+  "fine_tune_lr_m1": 0.0005,
+  "fine_tune_lr_m2": 0.0005,
+  "fine_tune_lr_gsi": 0.0003, 
+  "fine_tune_len": 1440,
+  "seq_len": 24,
+  "forecasting_len": 1,
+  "n_trials": 5,
+  "patience": 50,
+  "scheduler_patience": 30,
+  "num_epoches_search": 100,
+  "num_epoches": 300,
+  "param_grid": {
+    "hidden_size": [2, 4, 6],
+    "num_layers": [1],
+    "lr": [0.001],
+    "batch_size": [256, 512]
+  },
+  "gsi_param_grid": {
+    "hidden_size": [64, 128],
+    "latent_dim": [3],
+    "dropout": [0.1],
+    "lr": [1e-3],
+    "BATCH_SIZE": [64, 128]
+  }
+}

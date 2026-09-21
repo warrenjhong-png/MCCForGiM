@@ -1,0 +1,10 @@
+{
+    "hidden_size": 64,
+    "mha_heads": 1,
+    "encoder_dropout": 0.1,
+    "decoder_dropout": 0.1,
+    "timesteps": 24,
+    "features": 44,
+    "latent_dim": 3,
+    "BATCH_SIZE": 64
+}

@@ -1,0 +1,5 @@
+{
+"cnn_enable":true, 
+"num_step": [ 8 ],
+"refresh_enable":true 
+}

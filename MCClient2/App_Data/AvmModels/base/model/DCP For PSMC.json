@@ -1,0 +1,124 @@
+{
+  "task_id": "82ae2bc1-ad23-43dd-9014-bc8a0545604d",
+  "model": {
+    "model_name": "model_202108201",
+    "model_id": 8,
+    "model_path": "D:\\Model\\82ae2bc1-ad23-43dd-9014-bc8a0545604d"
+  },
+  "parameters": {
+    "phase_id": 1,
+	"testingCount":0,
+    "rawdata_path": "D:\\task\\5489a0d4-035f-42bc-8d39-532ffc64fe8d",
+    "datacollectionplan": {
+      "datasource": {
+        "variablegroups": [
+          {
+            "io": "i",
+            "variablegroupname": "RIA",
+            "metatable": "PROCESSDEF_RIA",
+            "filename": "PROCESS01I",
+            "variables": [
+              {
+                "variableid": 1,
+                "variablename": "AdjustedFibersTemp1",
+                "isseparator": 0,
+                "separatingvalues": []
+              },
+              {
+                "variableid": 2,
+                "variablename": "H2_MFC",
+                "isseparator": 0,
+                "separatingvalues": []
+              },
+              {
+                "variableid": 3,
+                "variablename": "WaferEmissivity",
+                "isseparator": 0,
+                "separatingvalues": []
+              },
+              {
+                "variableid": 4,
+                "variablename": "StepID",
+                "isseparator": 1,
+                "separatingvalues": [
+                  "3",
+                  "8",
+                  "13",
+                  "14"
+                ]
+              }
+            ]
+          },
+          {
+            "io": "o",
+            "variablegroupname": "METROLOGY",
+            "metatable": "METROLOGYDEF",
+            "filename": "METROLOGY01O",
+            "variables": [
+              {
+                "variableid": 5,
+                "variablename": "AVERAGE",
+                "isseparator": 0,
+                "separatingvalues": []
+              }
+            ]
+          }
+        ]
+      },
+      "feature": {
+        "filterrules": [
+          {
+            "ruleid": 1,
+            "variableid": 1,
+            "separatingvalues": "3",
+            "trimbegin": 0,
+            "trimend": 0,
+            "rulename": "RIA_AdjustedFibersTemp1_Step=3_Filter0"
+          },
+          {
+            "ruleid": 2,
+            "variableid": 2,
+            "separatingvalues": "8",
+            "trimbegin": 2,
+            "trimend": 10,
+            "rulename": "RIA_H2_MFC_Step=8_Filter0"
+          },
+          {
+            "ruleid": 3,
+            "variableid": 3,
+            "separatingvalues": "13",
+            "trimbegin": 3,
+            "trimend": 15,
+            "rulename": "RIA_WaferEmissivity_Step=13_Filter0"
+          }
+        ],
+        "indicatorrules": [
+          {
+            "ruleid": 1,
+            "filterruleid": 1,
+            "algorithm": "Max",
+            "rulename": "RIA_AdjustedFibersTemp1_Step=3_Filter0_Max"
+          },
+          {
+            "ruleid": 2,
+            "filterruleid": 2,
+            "algorithm": "Mean",
+            "rulename": "RIA_H2_MFC_Step=8_Filter0_Mean"
+          },
+          {
+            "ruleid": 3,
+            "filterruleid": 3,
+            "algorithm": "Mean",
+            "rulename": "RIA_WaferEmissivity_Step=13_Filter0_Mean"
+          }
+        ],
+        "pointrules": [
+          {
+            "ruleid": 1,
+            "variableid": 5
+          }
+        ]
+      }
+    }
+  }
+}
