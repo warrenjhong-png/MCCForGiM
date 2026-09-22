@@ -288,8 +288,11 @@
         // 取得分鐘
         const minutes = dateTime.getMinutes();
 
+        // 取得秒數
+        const seconds = dateTime.getSeconds();
+
         // 格式化成 "YYYY-MM-DD HH:MM:SS" 格式
-        const formattedDate = `${year}/${month}/${day} ${hours}:${minutes}`;
+        const formattedDate = `${year}/${month}/${day} ${hours}:${minutes}:${seconds}`;
         return formattedDate;
     }
 

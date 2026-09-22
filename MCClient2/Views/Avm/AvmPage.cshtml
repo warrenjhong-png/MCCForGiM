@@ -35,7 +35,7 @@
             <div>Task ID:</div>
             <div>{{taskId}}</div>
             <div class="modelProcessInfo">
-                <span>Model : {{info}}</span>
+                <span style="display:none">Model : {{info}}</span>
                 <div style="display:none">
                     <button v-on:click="loopBuildModel('loop')">Loop</button>
                     <button v-on:click="loopBuildModel('break')">Next break</button>
@@ -837,7 +837,10 @@
                 {{ modelProcessTitle }}
             </div>
 
-            <div class="model-progress-message">
+            <div class="model-progress-message"
+                 v-if="modelProcessStage !== 'Model' &&
+                       modelProcessStage !== 'Failed' &&
+                       modelProcessStage !== 'Uploading'">
                 {{ modelProcessMessage }}
             </div>
 
@@ -996,16 +999,31 @@
                  class="model-progress-completed">
 
                 {{ modelUploadResult }}
+
+                <div class="model-name-buttons">
+                    <button type="button"
+                            class="k-button k-primary"
+                            v-on:click="closeModelProgress">
+                        關閉視窗
+                    </button>
+                </div>
             </div>
 
             <!-- 失敗 -->
             <div v-if="modelProcessStage === 'Failed'"
                  class="model-progress-failed">
 
-                {{ modelProcessError }}
+                <div class="model-error-summary">
+                    {{ modelProcessMessage }}
+                </div>
 
-                <div class="model-name-buttons"
-                     v-if="modelApiNoResponse">
+                <details class="model-error-details"
+                         v-if="modelProcessError">
+                    <summary>顯示技術細節</summary>
+                    <pre>{{ modelProcessError }}</pre>
+                </details>
+
+                <div class="model-name-buttons">
                     <button type="button"
                             class="k-button k-primary"
                             v-on:click="closeModelProgress">

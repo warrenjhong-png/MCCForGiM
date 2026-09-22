@@ -299,10 +299,30 @@ namespace MCClient2.Models
                     variable.MetaName = kvp.Key;//V_PROCESSDEF_RDA/PROCESSDEF_RDA
                     variable.Type = kvp.Value;
                     variable.Name = GetVariableTableName(dbAgent, variable.MetaName);//V_PROCESS_RDA/PROCESS_RDA
-                    var names = GetDeviceDef(variable.MetaName).Keys.ToList().NaturalSort(); //自然排序
+                    var deviceDef = GetDeviceDef(variable.MetaName);
+                    var naturallySortedFields = deviceDef.Values
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .ToList()
+                        .NaturalSort()
+                        .ToList();
+                    var fieldOrder = naturallySortedFields
+                        .Select((fieldName, index) => new { fieldName, index })
+                        .ToDictionary(
+                            item => item.fieldName,
+                            item => item.index,
+                            StringComparer.OrdinalIgnoreCase
+                        );
+                    var names = deviceDef.Keys
+                        .OrderBy(name => fieldOrder[deviceDef[name]])
+                        .ThenBy(name => name, StringComparer.OrdinalIgnoreCase)
+                        .ToList();
                     foreach (var name in names)
                     {
-                        variable.VariableNames.Add(new VariableName() { Name = name });
+                        variable.VariableNames.Add(new VariableName()
+                        {
+                            Name = name,
+                            FieldName = deviceDef[name]
+                        });
                     }
                     if (variable.Type.Contains("METROLOGY")) //判斷type有無step
                         variable.HasStep = false;

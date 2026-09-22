@@ -1271,7 +1271,39 @@ namespace MCClient2.Controllers
 
                 // === 建模 API request：使用 DCP 完整格式 ===
                 string taskPath = PathHelper.GetDirPath(taskId);
-                string dcpPath = Path.Combine(taskPath, "model", "DCP.json");
+                string modelPath = Path.Combine(taskPath, "model");
+                Directory.CreateDirectory(modelPath);
+
+                string baseVmsConfigPath = Path.Combine(
+                    AppConstant.AvmModelDirPath,
+                    "base",
+                    "model",
+                    "vms_config.json"
+                );
+                if (!System.IO.File.Exists(baseVmsConfigPath))
+                {
+                    throw new FileNotFoundException(
+                        "找不到建模用 vms_config.json",
+                        baseVmsConfigPath
+                    );
+                }
+
+                string taskVmsConfigPath = Path.Combine(
+                    modelPath,
+                    "vms_config.json"
+                );
+                System.IO.File.Copy(
+                    baseVmsConfigPath,
+                    taskVmsConfigPath,
+                    true
+                );
+
+                AppConstant.Logger.Info(
+                    $"vms_config.json 已輸出至 Task model 根目錄，" +
+                    $"TaskId：{taskId}，路徑：{taskVmsConfigPath}"
+                );
+
+                string dcpPath = Path.Combine(modelPath, "DCP.json");
                 if (!System.IO.File.Exists(dcpPath))
                 {
                     throw new FileNotFoundException("找不到建模用 DCP.json", dcpPath);

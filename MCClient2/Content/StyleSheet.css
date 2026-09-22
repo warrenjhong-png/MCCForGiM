@@ -581,7 +581,9 @@ input[type=file]::file-selector-button {
 }
 
 .model-progress-window {
-    width: 520px;
+    width: min(620px, calc(100vw - 32px));
+    max-height: calc(100vh - 48px);
+    overflow-y: auto;
     padding: 24px;
     background: #ffffff;
     border-radius: 6px;
@@ -722,7 +724,43 @@ input[type=file]::file-selector-button {
 
 .model-progress-failed {
     color: #dc3545;
+    word-break: break-word;
+}
+
+.model-error-summary {
+    padding: 10px 12px;
+    border: 1px solid #f1aeb5;
+    border-radius: 4px;
+    background: #f8d7da;
+    color: #842029;
     font-weight: bold;
+}
+
+.model-error-details {
+    margin-top: 12px;
+    color: #333333;
+}
+
+.model-error-details summary {
+    cursor: pointer;
+    color: #555555;
+    font-weight: bold;
+}
+
+.model-error-details pre {
+    max-height: 320px;
+    margin: 10px 0 0;
+    padding: 12px;
+    overflow: auto;
+    border: 1px solid #dddddd;
+    border-radius: 4px;
+    background: #f7f7f7;
+    color: #333333;
+    font-family: Consolas, monospace;
+    font-size: 12px;
+    line-height: 1.45;
+    text-align: left;
+    white-space: pre-wrap;
     word-break: break-word;
 }
 

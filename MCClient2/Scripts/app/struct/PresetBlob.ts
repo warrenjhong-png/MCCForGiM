@@ -5,8 +5,8 @@ namespace PresetBlob {
         //trigger query
         let combination: CombinationSelection = data;
         if (combination.fileType == "Combination") {
-            $(".date-start").prop("value", kendo.toString(new Date(combination.startTime), "yyyy/MM/dd HH:mm"));
-            $(".date-end").prop("value", kendo.toString(new Date(combination.endTime), "yyyy/MM/dd HH:mm"));
+            $(".date-start").prop("value", kendo.toString(new Date(combination.startTime), "yyyy/MM/dd HH:mm:ss"));
+            $(".date-end").prop("value", kendo.toString(new Date(combination.endTime), "yyyy/MM/dd HH:mm:ss"));
             _this.startTime = combination.startTime;
             _this.endTime = combination.endTime;
             let condition: Array<any> = JSON.parse(combination.fabInput.data);

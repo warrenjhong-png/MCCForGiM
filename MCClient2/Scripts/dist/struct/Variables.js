@@ -13,6 +13,7 @@ class VariableName {
     constructor() {
         this.isStep = false;
         this.Name = null;
+        this.FieldName = null;
         this.VariableId = null;
     }
 }

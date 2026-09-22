@@ -47,6 +47,7 @@ namespace MCClient2.Models
     public class VariableName
     {
         public string Name { get; set; }
+        public string FieldName { get; set; }
         public string VariableId { get; set; }
         //Todo: initial variableId to -1
         //public VariableName()

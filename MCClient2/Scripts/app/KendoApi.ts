@@ -4,8 +4,8 @@
 
        let time: any;
        let result =  $("." + name).kendoDateTimePicker({
-           timeFormat: "HH:mm",
-           format: "yyyy/MM/dd HH:mm",
+           timeFormat: "HH:mm:ss",
+           format: "yyyy/MM/dd HH:mm:ss",
            value: new Date(),
            change: function () {
                time = this.value();
@@ -59,6 +59,10 @@
             }, {
                     title: "Variable Name",
                     field: "name",
+                    attributes: { "class": "min-width-class" }
+            }, {
+                    title: "FieldName",
+                    field: "fieldName",
                     attributes: { "class": "min-width-class" }
             }],
             scrollable: false

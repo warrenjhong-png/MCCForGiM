@@ -452,7 +452,10 @@ var AvmPage;
                             Method.addVariableGrid(variables[i]);
                             let dataSource = [];
                             for (let j = 0; j < variables[i].VariableNames.length; j++) {
-                                dataSource.push({ name: variables[i].VariableNames[j].Name });
+                                dataSource.push({
+                                    name: variables[i].VariableNames[j].Name,
+                                    fieldName: variables[i].VariableNames[j].FieldName
+                                });
                             }
                             KendoApi.VariablesSelectionGrid(className, variables[i].Type, dataSource);
                             let classNameCheckItem = "." + className + "-checkItem";
@@ -1496,10 +1499,9 @@ var AvmPage;
                             const result = yield BuildModel.BuildModel(taskId);
                             console.log("Build Model Result：", result);
                             // 顯示建模 API 是否有回應，避免畫面只停留在「模型建立中」。
-                            if (result && result.msg) {
-                                vm.modelProcessMessage = result.success === false
-                                    ? "建模 API 回應失敗：" + String(result.msg)
-                                    : "建模 API 已回應，正在等待模型建立完成...";
+                        if (result && result.msg && result.success !== false) {
+                            vm.modelProcessMessage =
+                                "建模 API 已回應，正在等待模型建立完成...";
                             }
                             if (!result || result.success === false) {
                                 vm.modelApiNoResponse = !result || result.msg === "API 無回應";
@@ -1537,31 +1539,38 @@ var AvmPage;
                                             window.clearInterval(checkFile);
                                             const errorInfo = yield BuildModel
                                                 .ReadErrorInfo(taskId);
-                                            alert(errorInfo);
+                                            vm.modelProcessStage = "Failed";
+                                            vm.modelProcessTitle = "Build Model Failed";
+                                            vm.modelProcessMessage = "模型建立失敗，請查看技術細節。";
+                                            vm.modelProcessError = errorInfo
+                                                ? String(errorInfo)
+                                                : "建模程式未提供錯誤內容。";
                                         }
                                     }
                                     catch (pollError) {
                                         window.clearInterval(checkFile);
                                         console.error("Model Process Check Error：", pollError);
-                                        alert("取得模型處理狀態失敗。");
+                                        vm.modelProcessStage = "Failed";
+                                        vm.modelProcessTitle = "Status Check Failed";
+                                        vm.modelProcessMessage = "取得模型處理狀態失敗。";
+                                        vm.modelProcessError = pollError instanceof Error
+                                            ? pollError.message
+                                            : String(pollError || "未知錯誤");
                                     }
                                 });
                             }, 1000);
                         }
                         catch (error) {
                             console.error("Build AVM Model Error：", error);
-                            if (vm.modelApiNoResponse) {
-                                vm.modelProcessStage = "Failed";
-                                vm.modelProcessTitle = "Build Model Failed";
-                                vm.modelProcessMessage = "建模 API 無法連線";
-                                vm.modelProcessError = "API 無回應";
-                            }
-                            // API 無回應時由建模視窗顯示訊息與關閉按鈕，避免再跳出瀏覽器 alert。
-                            if (!vm.modelApiNoResponse) {
-                                alert(error instanceof Error
-                                    ? error.message
-                                    : "Build Model Failed.");
-                            }
+                        const errorDetail = error instanceof Error
+                            ? error.message
+                            : String(error || "Build Model Failed.");
+                        vm.modelProcessStage = "Failed";
+                        vm.modelProcessTitle = "Build Model Failed";
+                        vm.modelProcessMessage = vm.modelApiNoResponse
+                            ? "建模 API 無法連線。"
+                            : "建模 API 回應失敗，請查看技術細節。";
+                        vm.modelProcessError = errorDetail;
                         }
                         finally {
                             /*

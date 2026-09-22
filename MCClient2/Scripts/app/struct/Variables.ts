@@ -15,6 +15,7 @@ class StepID {
 class VariableName{
     isStep: boolean = false;
     Name: string = null;
+    FieldName: string = null;
     VariableId: string = null;
 }
 
