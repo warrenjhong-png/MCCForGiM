@@ -458,21 +458,29 @@
                             <div class="param-card-body">
                                 <div class="param-row">
                                     <label>無進度提醒時間</label>
-                                    <input type="number"
-                                           min="10"
-                                           max="3600"
+                                     <input type="number"
+                                           min="1"
+                                           max="86400"
                                            step="1"
-                                           v-model.number="rawDataWarningAfterSeconds">
-                                    <span>秒</span>
+                                           v-model.number="rawDataWarningValue">
+                                     <select v-model="rawDataWarningUnit">
+                                         <option value="hours">小時</option>
+                                         <option value="minutes">分鐘</option>
+                                         <option value="seconds">秒</option>
+                                     </select>
                                 </div>
                                 <div class="param-row">
                                     <label>再次提醒間隔</label>
-                                    <input type="number"
-                                           min="10"
-                                           max="3600"
+                                     <input type="number"
+                                           min="1"
+                                           max="86400"
                                            step="1"
-                                           v-model.number="rawDataReminderIntervalSeconds">
-                                    <span>秒</span>
+                                           v-model.number="rawDataReminderValue">
+                                     <select v-model="rawDataReminderUnit">
+                                         <option value="hours">小時</option>
+                                         <option value="minutes">分鐘</option>
+                                         <option value="seconds">秒</option>
+                                     </select>
                                 </div>
                                 <div class="rawdata-settings-actions">
                                     <button type="button"

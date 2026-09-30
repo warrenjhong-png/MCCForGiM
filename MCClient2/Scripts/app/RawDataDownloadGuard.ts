@@ -1,8 +1,8 @@
 namespace RawDataDownloadGuard {
-    export const DefaultWarningAfterSeconds = 120;
-    export const DefaultReminderIntervalSeconds = 120;
+    export const DefaultWarningAfterSeconds = 12 * 60 * 60;
+    export const DefaultReminderIntervalSeconds = 12 * 60 * 60;
     export const MinimumSeconds = 10;
-    export const MaximumSeconds = 3600;
+    export const MaximumSeconds = 24 * 60 * 60;
     export const SettingsStorageKey =
         "mcc.rawDataDownloadReminderSettings";
 
@@ -14,6 +14,10 @@ namespace RawDataDownloadGuard {
     export interface Settings {
         warningAfterSeconds: number;
         reminderIntervalSeconds: number;
+        warningValue?: number;
+        warningUnit?: string;
+        reminderValue?: number;
+        reminderUnit?: string;
     }
 
     export interface SettingsValidationResult {
@@ -244,17 +248,35 @@ namespace RawDataDownloadGuard {
 
     export function validateSettings(
         warningAfterSeconds: any,
-        reminderIntervalSeconds: any): SettingsValidationResult {
+        reminderIntervalSeconds: any,
+        warningValue?: any,
+        warningUnit?: string,
+        reminderValue?: any,
+        reminderUnit?: string): SettingsValidationResult {
         const warningAfter = Number(warningAfterSeconds);
         const reminderInterval = Number(reminderIntervalSeconds);
         const warningValid = isWholeNumberInRange(warningAfter);
         const reminderValid = isWholeNumberInRange(reminderInterval);
 
         if (warningValid && reminderValid) {
+            const warningDisplay = getDisplayValue(
+                warningAfter,
+                warningUnit);
+            const reminderDisplay = getDisplayValue(
+                reminderInterval,
+                reminderUnit);
             return {
                 settings: {
                     warningAfterSeconds: warningAfter,
-                    reminderIntervalSeconds: reminderInterval
+                    reminderIntervalSeconds: reminderInterval,
+                    warningValue: isPositiveNumber(warningValue)
+                        ? Number(warningValue)
+                        : warningDisplay.value,
+                    warningUnit: warningDisplay.unit,
+                    reminderValue: isPositiveNumber(reminderValue)
+                        ? Number(reminderValue)
+                        : reminderDisplay.value,
+                    reminderUnit: reminderDisplay.unit
                 },
                 isValid: true,
                 message: ""
@@ -262,17 +284,21 @@ namespace RawDataDownloadGuard {
         }
 
         return {
-            settings: {
-                warningAfterSeconds:
-                    DefaultWarningAfterSeconds,
-                reminderIntervalSeconds:
-                    DefaultReminderIntervalSeconds
+                settings: {
+                    warningAfterSeconds:
+                        DefaultWarningAfterSeconds,
+                    reminderIntervalSeconds:
+                        DefaultReminderIntervalSeconds,
+                    warningValue: 12,
+                    warningUnit: "hours",
+                    reminderValue: 12,
+                    reminderUnit: "hours"
             },
             isValid: false,
             message:
                 "RawData 等待設定須為 " +
                 MinimumSeconds + " 至 " +
-                MaximumSeconds + " 秒的整數；已恢復安全預設值。"
+                MaximumSeconds + " 秒（24 小時）內；已恢復 12 小時預設值。"
         };
     }
 
@@ -291,7 +317,11 @@ namespace RawDataDownloadGuard {
 
             return validateSettings(
                 parsed.warningAfterSeconds,
-                parsed.reminderIntervalSeconds);
+                parsed.reminderIntervalSeconds,
+                parsed.warningValue,
+                parsed.warningUnit,
+                parsed.reminderValue,
+                parsed.reminderUnit);
         }
         catch (error) {
             return validateSettings(null, null);
@@ -303,6 +333,34 @@ namespace RawDataDownloadGuard {
         window.localStorage.setItem(
             SettingsStorageKey,
             JSON.stringify(settings));
+    }
+
+    export function toSeconds(value: any, unit: string): number {
+        const numericValue = Number(value);
+        const multiplier = normalizeUnit(unit) === "hours"
+            ? 3600
+            : normalizeUnit(unit) === "minutes"
+                ? 60
+                : 1;
+
+        return numericValue * multiplier;
+    }
+
+    export function getDisplayValue(
+        seconds: number,
+        preferredUnit?: string): { value: number; unit: string } {
+        const unit = normalizeUnit(preferredUnit);
+
+        if (preferredUnit && seconds % unitMultiplier(unit) === 0) {
+            return { value: seconds / unitMultiplier(unit), unit: unit };
+        }
+        if (seconds % 3600 === 0) {
+            return { value: seconds / 3600, unit: "hours" };
+        }
+        if (seconds % 60 === 0) {
+            return { value: seconds / 60, unit: "minutes" };
+        }
+        return { value: seconds, unit: "seconds" };
     }
 
     export function formatDuration(
@@ -326,5 +384,20 @@ namespace RawDataDownloadGuard {
 
     function pad(value: number): string {
         return value < 10 ? "0" + value : String(value);
+    }
+
+    function isPositiveNumber(value: any): boolean {
+        const numericValue = Number(value);
+        return isFinite(numericValue) && numericValue > 0;
+    }
+
+    function normalizeUnit(unit: string): string {
+        return unit === "hours" || unit === "minutes"
+            ? unit
+            : "seconds";
+    }
+
+    function unitMultiplier(unit: string): number {
+        return unit === "hours" ? 3600 : unit === "minutes" ? 60 : 1;
     }
 }

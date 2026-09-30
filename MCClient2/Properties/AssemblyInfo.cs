@@ -31,6 +31,6 @@ using System.Runtime.InteropServices;
 //
 // 您可以指定所有值或預設修訂和組件數目
 // 指定為預設值:
-[assembly: AssemblyVersion("1.1.3.23")]
-[assembly: AssemblyFileVersion("1.1.3.23")]
+[assembly: AssemblyVersion("1.1.3.27")]
+[assembly: AssemblyFileVersion("1.1.3.27")]
 [assembly: InternalsVisibleTo("MCClient2.Tests")]

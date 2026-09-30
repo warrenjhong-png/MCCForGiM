@@ -314,6 +314,10 @@ var AvmPage;
                 rawDataPartialResult: false,
                 rawDataWarningAfterSeconds: RawDataDownloadGuard.DefaultWarningAfterSeconds,
                 rawDataReminderIntervalSeconds: RawDataDownloadGuard.DefaultReminderIntervalSeconds,
+                rawDataWarningValue: 12,
+                rawDataWarningUnit: "hours",
+                rawDataReminderValue: 12,
+                rawDataReminderUnit: "hours",
                 rawDataSettingsMessage: "",
                 rawDataSettingsError: "",
                 modelProcessVisible: false,
@@ -322,6 +326,7 @@ var AvmPage;
                 modelProcessMessage: "",
                 modelProcessError: "",
                 modelApiNoResponse: false,
+                modelStatusTimer: null,
                 modelNameError: "",
                 modelUploading: false,
                 modelUploadResult: ""
@@ -339,6 +344,12 @@ var AvmPage;
                     rawDataSettings.settings.warningAfterSeconds;
                 this.rawDataReminderIntervalSeconds =
                     rawDataSettings.settings.reminderIntervalSeconds;
+                const warningDisplay = RawDataDownloadGuard.getDisplayValue(this.rawDataWarningAfterSeconds, rawDataSettings.settings.warningUnit);
+                const reminderDisplay = RawDataDownloadGuard.getDisplayValue(this.rawDataReminderIntervalSeconds, rawDataSettings.settings.reminderUnit);
+                this.rawDataWarningValue = warningDisplay.value;
+                this.rawDataWarningUnit = warningDisplay.unit;
+                this.rawDataReminderValue = reminderDisplay.value;
+                this.rawDataReminderUnit = reminderDisplay.unit;
                 if (!rawDataSettings.isValid) {
                     this.rawDataSettingsError =
                         rawDataSettings.message;
@@ -1496,32 +1507,23 @@ var AvmPage;
                             vm.modelProcessTitle = "Building Model";
                             vm.modelProcessMessage = "模型建立中，請稍候...";
                             vm.info = "Starting...";
-                            const result = yield BuildModel.BuildModel(taskId);
-                            console.log("Build Model Result：", result);
-                            // 顯示建模 API 是否有回應，避免畫面只停留在「模型建立中」。
-                        if (result && result.msg && result.success !== false) {
-                            vm.modelProcessMessage =
-                                "建模 API 已回應，正在等待模型建立完成...";
-                            }
-                            if (!result || result.success === false) {
-                                vm.modelApiNoResponse = !result || result.msg === "API 無回應";
-                                throw new Error(result && result.msg
-                                    ? result.msg
-                                    : "Build Model 啟動失敗。");
-                            }
-                            $(".modelProcessInfo")
-                                .css("display", "inline");
-                            // ==========================================
-                            // 輪詢模型狀態
-                            // ==========================================
-                            const checkFile = window.setInterval(function () {
+                            let pollingFinished = false;
+                            let checkFile = null;
+                            const pollModelStatus = function () {
                                 return __awaiter(this, void 0, void 0, function* () {
                                     try {
-                                        vm.info =
-                                            yield BuildModel
-                                                .ModelProcessInfo(taskId);
-                                        if (vm.info === "OK!") {
+                                        const statusInfo = yield BuildModel.ModelProcessInfo(taskId);
+                                        const status = typeof statusInfo === "string"
+                                            ? statusInfo
+                                            : statusInfo && statusInfo.status;
+                                        if (statusInfo && statusInfo.message) {
+                                            vm.modelProcessMessage = statusInfo.message;
+                                            vm.info = statusInfo.stage || status;
+                                        }
+                                        if (status === "Completed" || status === "OK!") {
+                                            pollingFinished = true;
                                             window.clearInterval(checkFile);
+                                            vm.modelStatusTimer = null;
                                             vm.info = "";
                                             vm.modelProcessStage = "Completed";
                                             vm.modelProcessTitle = "Model Completed";
@@ -1533,12 +1535,12 @@ var AvmPage;
                                             if (vm.isCheckedTestingData && vm.TestingData) {
                                                 yield DataCollection.DownloadPPT(taskId);
                                             }
-                                            return;
                                         }
-                                        else if (vm.info === "Error") {
+                                        else if (status === "Error") {
+                                            pollingFinished = true;
                                             window.clearInterval(checkFile);
-                                            const errorInfo = yield BuildModel
-                                                .ReadErrorInfo(taskId);
+                                            vm.modelStatusTimer = null;
+                                            const errorInfo = yield BuildModel.ReadErrorInfo(taskId);
                                             vm.modelProcessStage = "Failed";
                                             vm.modelProcessTitle = "Build Model Failed";
                                             vm.modelProcessMessage = "模型建立失敗，請查看技術細節。";
@@ -1548,29 +1550,48 @@ var AvmPage;
                                         }
                                     }
                                     catch (pollError) {
-                                        window.clearInterval(checkFile);
-                                        console.error("Model Process Check Error：", pollError);
-                                        vm.modelProcessStage = "Failed";
-                                        vm.modelProcessTitle = "Status Check Failed";
-                                        vm.modelProcessMessage = "取得模型處理狀態失敗。";
-                                        vm.modelProcessError = pollError instanceof Error
-                                            ? pollError.message
-                                            : String(pollError || "未知錯誤");
+                                        console.warn("Model status temporarily unavailable：", pollError);
+                                        vm.modelProcessMessage = "暫時無法取得建模狀態，將繼續重試...";
                                     }
                                 });
-                            }, 1000);
+                            };
+                            // Build API 可能執行數小時；送出請求後立即獨立輪詢狀態。
+                            checkFile = window.setInterval(pollModelStatus, 5000);
+                            vm.modelStatusTimer = checkFile;
+                            pollModelStatus();
+                            const result = yield BuildModel.BuildModel(taskId);
+                            console.log("Build Model Result：", result);
+                            // 顯示建模 API 是否有回應，避免畫面只停留在「模型建立中」。
+                            if (!pollingFinished && result && result.msg && result.success !== false) {
+                                vm.modelProcessMessage =
+                                    "建模 API 已回應，正在等待模型建立完成...";
+                            }
+                            if (!result || result.success === false) {
+                                window.clearInterval(checkFile);
+                                vm.modelStatusTimer = null;
+                                vm.modelApiNoResponse = !result || result.msg === "API 無回應";
+                                throw new Error(result && result.msg
+                                    ? result.msg
+                                    : "Build Model 啟動失敗。");
+                            }
+                            $(".modelProcessInfo")
+                                .css("display", "inline");
                         }
                         catch (error) {
+                            if (vm.modelStatusTimer !== null) {
+                                window.clearInterval(vm.modelStatusTimer);
+                                vm.modelStatusTimer = null;
+                            }
                             console.error("Build AVM Model Error：", error);
-                        const errorDetail = error instanceof Error
-                            ? error.message
-                            : String(error || "Build Model Failed.");
-                        vm.modelProcessStage = "Failed";
-                        vm.modelProcessTitle = "Build Model Failed";
-                        vm.modelProcessMessage = vm.modelApiNoResponse
-                            ? "建模 API 無法連線。"
-                            : "建模 API 回應失敗，請查看技術細節。";
-                        vm.modelProcessError = errorDetail;
+                            const errorDetail = error instanceof Error
+                                ? error.message
+                                : String(error || "Build Model Failed.");
+                            vm.modelProcessStage = "Failed";
+                            vm.modelProcessTitle = "Build Model Failed";
+                            vm.modelProcessMessage = vm.modelApiNoResponse
+                                ? "建模 API 無法連線。"
+                                : "建模 API 回應失敗，請查看技術細節。";
+                            vm.modelProcessError = errorDetail;
                         }
                         finally {
                             /*
@@ -2213,11 +2234,15 @@ var AvmPage;
                 },
                 saveRawDataDownloadSettings: function () {
                     const validation = RawDataDownloadGuard
-                        .validateSettings(this.rawDataWarningAfterSeconds, this.rawDataReminderIntervalSeconds);
+                        .validateSettings(RawDataDownloadGuard.toSeconds(this.rawDataWarningValue, this.rawDataWarningUnit), RawDataDownloadGuard.toSeconds(this.rawDataReminderValue, this.rawDataReminderUnit), this.rawDataWarningValue, this.rawDataWarningUnit, this.rawDataReminderValue, this.rawDataReminderUnit);
                     this.rawDataWarningAfterSeconds =
                         validation.settings.warningAfterSeconds;
                     this.rawDataReminderIntervalSeconds =
                         validation.settings.reminderIntervalSeconds;
+                    this.rawDataWarningValue = validation.settings.warningValue;
+                    this.rawDataWarningUnit = validation.settings.warningUnit;
+                    this.rawDataReminderValue = validation.settings.reminderValue;
+                    this.rawDataReminderUnit = validation.settings.reminderUnit;
                     if (!validation.isValid) {
                         this.rawDataSettingsError =
                             validation.message;
@@ -2323,7 +2348,7 @@ var AvmPage;
                         vm.rawDataStopRequested = false;
                         vm.rawDataStopError = "";
                         vm.rawDataPartialResult = false;
-                        const settingsValidation = RawDataDownloadGuard.validateSettings(vm.rawDataWarningAfterSeconds, vm.rawDataReminderIntervalSeconds);
+                        const settingsValidation = RawDataDownloadGuard.validateSettings(RawDataDownloadGuard.toSeconds(vm.rawDataWarningValue, vm.rawDataWarningUnit), RawDataDownloadGuard.toSeconds(vm.rawDataReminderValue, vm.rawDataReminderUnit), vm.rawDataWarningValue, vm.rawDataWarningUnit, vm.rawDataReminderValue, vm.rawDataReminderUnit);
                         vm.rawDataWarningAfterSeconds =
                             settingsValidation.settings.warningAfterSeconds;
                         vm.rawDataReminderIntervalSeconds =

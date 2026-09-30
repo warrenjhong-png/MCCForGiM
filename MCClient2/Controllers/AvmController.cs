@@ -18,6 +18,7 @@ using System.Threading.Tasks;
 using System.Web;
 using System.Web.Hosting;
 using System.Web.Mvc;
+using System.Web.SessionState;
 using System.Web.Services.Description;
 using ActionResult = System.Web.Mvc.ActionResult;
 using ControllerContext = System.Web.Mvc.ControllerContext;
@@ -26,6 +27,7 @@ using Variables = MCClient2.Models.Variables;
 
 namespace MCClient2.Controllers
 {
+    [SessionState(SessionStateBehavior.Disabled)]
     public class AvmController : JsonNetController
     {
         private readonly IApiClient _http;
@@ -1369,22 +1371,137 @@ namespace MCClient2.Controllers
             try
             {
                 string modelDirPath = GetModelDirPath(taskId);
+                string logDirPath = Path.Combine(modelDirPath, "log");
 
                 if (System.IO.File.Exists(Path.Combine(modelDirPath, "Finish.txt")))
                 {
-                    return Json("OK!");
+                    return Json(new
+                    {
+                        status = "Completed",
+                        stage = "Completed",
+                        message = "模型建立完成。",
+                        epoch = (int?)null
+                    });
                 }
 
                 if (System.IO.File.Exists(Path.Combine(modelDirPath, "Error.txt")))
                 {
-                    return Json("Error");
+                    return Json(new
+                    {
+                        status = "Error",
+                        stage = "Failed",
+                        message = "模型建立失敗。",
+                        epoch = (int?)null
+                    });
                 }
 
-                return Json("Processing...");
+                string stage = "Preparing";
+                string message = "建模 API 已送出，等待資料前處理...";
+                int? epoch = null;
+
+                string gsiLossPath = Path.Combine(logDirPath, "loss_gsi.csv");
+                string m2LossPath = Path.Combine(logDirPath, "loss_m2.csv");
+                string m1LossPath = Path.Combine(logDirPath, "loss_m1.csv");
+
+                if (System.IO.File.Exists(Path.Combine(logDirPath, "retrain_GSI_done.txt")))
+                {
+                    stage = "Finalizing";
+                    message = "GSI 訓練完成，正在整理模型輸出...";
+                }
+                else if (System.IO.File.Exists(gsiLossPath) ||
+                         System.IO.File.Exists(Path.Combine(logDirPath, "retrain_m2_done.txt")))
+                {
+                    stage = "GSI";
+                    epoch = TryReadLastEpoch(gsiLossPath);
+                    message = epoch.HasValue
+                        ? $"正在訓練 GSI，目前 Epoch {epoch.Value}。"
+                        : "M2 已完成，正在啟動 GSI 訓練...";
+                }
+                else if (System.IO.File.Exists(m2LossPath) ||
+                         System.IO.File.Exists(Path.Combine(logDirPath, "retrain_m1_done.txt")))
+                {
+                    stage = "M2";
+                    epoch = TryReadLastEpoch(m2LossPath);
+                    message = epoch.HasValue
+                        ? $"正在訓練 M2，目前 Epoch {epoch.Value}。"
+                        : "M1 已完成，正在啟動 M2 訓練...";
+                }
+                else if (System.IO.File.Exists(m1LossPath))
+                {
+                    stage = "M1";
+                    epoch = TryReadLastEpoch(m1LossPath);
+                    message = epoch.HasValue
+                        ? $"正在訓練 M1，目前 Epoch {epoch.Value}。"
+                        : "正在啟動 M1 訓練...";
+                }
+                else if (System.IO.File.Exists(Path.Combine(
+                    modelDirPath, "TrainingData", "training_data.csv")))
+                {
+                    stage = "Preprocessing";
+                    message = "訓練資料已產生，正在進行模型前處理...";
+                }
+                else if (Directory.Exists(Path.Combine(modelDirPath, "TrainingData")))
+                {
+                    stage = "Preprocessing";
+                    message = "正在合併與清理訓練資料...";
+                }
+
+                return Json(new
+                {
+                    status = "Processing",
+                    stage,
+                    message,
+                    epoch
+                });
             }
             catch (Exception ex)
             {
                 return Json(ex);
+            }
+        }
+
+        private int? TryReadLastEpoch(string filePath)
+        {
+            if (!System.IO.File.Exists(filePath))
+            {
+                return null;
+            }
+
+            try
+            {
+                string lastLine = null;
+                using (var stream = new FileStream(
+                    filePath,
+                    FileMode.Open,
+                    FileAccess.Read,
+                    FileShare.ReadWrite))
+                using (var reader = new StreamReader(stream))
+                {
+                    string line;
+                    while ((line = reader.ReadLine()) != null)
+                    {
+                        if (!string.IsNullOrWhiteSpace(line))
+                        {
+                            lastLine = line;
+                        }
+                    }
+                }
+
+                if (string.IsNullOrWhiteSpace(lastLine) ||
+                    lastLine.StartsWith("epoch", StringComparison.OrdinalIgnoreCase))
+                {
+                    return null;
+                }
+
+                int epoch;
+                return int.TryParse(lastLine.Split(',')[0], out epoch)
+                    ? epoch
+                    : (int?)null;
+            }
+            catch (IOException)
+            {
+                // 訓練程序可能正在寫入檔案；下一次輪詢再讀即可。
+                return null;
             }
         }
 

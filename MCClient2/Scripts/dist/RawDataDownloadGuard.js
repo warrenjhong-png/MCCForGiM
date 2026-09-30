@@ -1,9 +1,9 @@
 var RawDataDownloadGuard;
 (function (RawDataDownloadGuard) {
-    RawDataDownloadGuard.DefaultWarningAfterSeconds = 120;
-    RawDataDownloadGuard.DefaultReminderIntervalSeconds = 120;
+    RawDataDownloadGuard.DefaultWarningAfterSeconds = 12 * 60 * 60;
+    RawDataDownloadGuard.DefaultReminderIntervalSeconds = 12 * 60 * 60;
     RawDataDownloadGuard.MinimumSeconds = 10;
-    RawDataDownloadGuard.MaximumSeconds = 3600;
+    RawDataDownloadGuard.MaximumSeconds = 24 * 60 * 60;
     RawDataDownloadGuard.SettingsStorageKey = "mcc.rawDataDownloadReminderSettings";
     class Guard {
         constructor(options) {
@@ -144,16 +144,26 @@ var RawDataDownloadGuard;
         }
     }
     RawDataDownloadGuard.Guard = Guard;
-    function validateSettings(warningAfterSeconds, reminderIntervalSeconds) {
+    function validateSettings(warningAfterSeconds, reminderIntervalSeconds, warningValue, warningUnit, reminderValue, reminderUnit) {
         const warningAfter = Number(warningAfterSeconds);
         const reminderInterval = Number(reminderIntervalSeconds);
         const warningValid = isWholeNumberInRange(warningAfter);
         const reminderValid = isWholeNumberInRange(reminderInterval);
         if (warningValid && reminderValid) {
+            const warningDisplay = getDisplayValue(warningAfter, warningUnit);
+            const reminderDisplay = getDisplayValue(reminderInterval, reminderUnit);
             return {
                 settings: {
                     warningAfterSeconds: warningAfter,
-                    reminderIntervalSeconds: reminderInterval
+                    reminderIntervalSeconds: reminderInterval,
+                    warningValue: isPositiveNumber(warningValue)
+                        ? Number(warningValue)
+                        : warningDisplay.value,
+                    warningUnit: warningDisplay.unit,
+                    reminderValue: isPositiveNumber(reminderValue)
+                        ? Number(reminderValue)
+                        : reminderDisplay.value,
+                    reminderUnit: reminderDisplay.unit
                 },
                 isValid: true,
                 message: ""
@@ -162,12 +172,16 @@ var RawDataDownloadGuard;
         return {
             settings: {
                 warningAfterSeconds: RawDataDownloadGuard.DefaultWarningAfterSeconds,
-                reminderIntervalSeconds: RawDataDownloadGuard.DefaultReminderIntervalSeconds
+                reminderIntervalSeconds: RawDataDownloadGuard.DefaultReminderIntervalSeconds,
+                warningValue: 12,
+                warningUnit: "hours",
+                reminderValue: 12,
+                reminderUnit: "hours"
             },
             isValid: false,
             message: "RawData 等待設定須為 " +
                 RawDataDownloadGuard.MinimumSeconds + " 至 " +
-                RawDataDownloadGuard.MaximumSeconds + " 秒的整數；已恢復安全預設值。"
+                RawDataDownloadGuard.MaximumSeconds + " 秒（24 小時）內；已恢復 12 小時預設值。"
         };
     }
     RawDataDownloadGuard.validateSettings = validateSettings;
@@ -178,7 +192,7 @@ var RawDataDownloadGuard;
                 return validateSettings(RawDataDownloadGuard.DefaultWarningAfterSeconds, RawDataDownloadGuard.DefaultReminderIntervalSeconds);
             }
             const parsed = JSON.parse(stored);
-            return validateSettings(parsed.warningAfterSeconds, parsed.reminderIntervalSeconds);
+            return validateSettings(parsed.warningAfterSeconds, parsed.reminderIntervalSeconds, parsed.warningValue, parsed.warningUnit, parsed.reminderValue, parsed.reminderUnit);
         }
         catch (error) {
             return validateSettings(null, null);
@@ -189,6 +203,30 @@ var RawDataDownloadGuard;
         window.localStorage.setItem(RawDataDownloadGuard.SettingsStorageKey, JSON.stringify(settings));
     }
     RawDataDownloadGuard.saveSettings = saveSettings;
+    function toSeconds(value, unit) {
+        const numericValue = Number(value);
+        const multiplier = normalizeUnit(unit) === "hours"
+            ? 3600
+            : normalizeUnit(unit) === "minutes"
+                ? 60
+                : 1;
+        return numericValue * multiplier;
+    }
+    RawDataDownloadGuard.toSeconds = toSeconds;
+    function getDisplayValue(seconds, preferredUnit) {
+        const unit = normalizeUnit(preferredUnit);
+        if (preferredUnit && seconds % unitMultiplier(unit) === 0) {
+            return { value: seconds / unitMultiplier(unit), unit: unit };
+        }
+        if (seconds % 3600 === 0) {
+            return { value: seconds / 3600, unit: "hours" };
+        }
+        if (seconds % 60 === 0) {
+            return { value: seconds / 60, unit: "minutes" };
+        }
+        return { value: seconds, unit: "seconds" };
+    }
+    RawDataDownloadGuard.getDisplayValue = getDisplayValue;
     function formatDuration(totalSeconds) {
         const seconds = Math.max(0, Math.floor(totalSeconds || 0));
         const hours = Math.floor(seconds / 3600);
@@ -207,6 +245,18 @@ var RawDataDownloadGuard;
     }
     function pad(value) {
         return value < 10 ? "0" + value : String(value);
+    }
+    function isPositiveNumber(value) {
+        const numericValue = Number(value);
+        return isFinite(numericValue) && numericValue > 0;
+    }
+    function normalizeUnit(unit) {
+        return unit === "hours" || unit === "minutes"
+            ? unit
+            : "seconds";
+    }
+    function unitMultiplier(unit) {
+        return unit === "hours" ? 3600 : unit === "minutes" ? 60 : 1;
     }
 })(RawDataDownloadGuard || (RawDataDownloadGuard = {}));
 //# sourceMappingURL=RawDataDownloadGuard.js.map

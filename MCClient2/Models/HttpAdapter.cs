@@ -6,7 +6,10 @@ namespace MCClient2.Models
 {
     internal class HttpAdapter : IApiClient
     {
-        private readonly HttpClient _client = new HttpClient();
+        private readonly HttpClient _client = new HttpClient
+        {
+            Timeout = TimeSpan.FromHours(24)
+        };
         private Uri _baseUri = new Uri("http://localhot/");
         public string BaseUrl
         {

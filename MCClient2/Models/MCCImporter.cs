@@ -96,7 +96,7 @@ namespace MCClient2.Models
 
                 sql.Append(" AND ST.TIMETAG >= ")
                    .Append(dbAgent.SqlMaker.ToConditionValue(input.StartTime))
-                   .Append(" AND ST.TIMETAG < ")
+                   .Append(" AND ST.TIMETAG <= ")
                    .Append(dbAgent.SqlMaker.ToConditionValue(input.EndTime))
                    .Append(" ORDER BY ST.")
                    .Append(queryColumn);
@@ -177,7 +177,7 @@ namespace MCClient2.Models
                 sql.Append("  AND ST.TIMETAG >= ")
                    .AppendLine(dbAgent.SqlMaker.ToConditionValue(startTime));
 
-                sql.Append("  AND ST.TIMETAG < ")
+                sql.Append("  AND ST.TIMETAG <= ")
                    .AppendLine(dbAgent.SqlMaker.ToConditionValue(endTime));
 
                 sql.AppendLine("GROUP BY ST.CONTEXTID");
@@ -245,7 +245,7 @@ namespace MCClient2.Models
                    .AppendLine(
                        dbAgent.SqlMaker.ToConditionValue(startTime));
 
-                sql.Append("  AND ST.TIMETAG < ")
+                sql.Append("  AND ST.TIMETAG <= ")
                    .AppendLine(
                        dbAgent.SqlMaker.ToConditionValue(endTime));
 
