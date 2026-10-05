@@ -1,0 +1,9 @@
+
+{
+  "fine_tune_len": 1440,
+  "seq_len": 180,
+  "forecasting_len": 300,
+  "length_train_data": 773437,
+  "length_test_data_isi": 565966,
+  "length_test_data": 565966
+}
