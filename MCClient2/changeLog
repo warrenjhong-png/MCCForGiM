@@ -1,4 +1,19 @@
-﻿20260924 v1.1.3.27
+﻿20261005 v1.1.3.29
+1.更新 model_config.json 頁面預設參數
+2.共用、M1、M2 參數改為 5 秒降採樣及對應 steps 設定
+3.更新 stride、max_samples 與 GSI 參數搜尋預設值
+4.建模頁面預設參數改由 base\model\model_config.json 外部載入
+5.外部設定檔讀取失敗時保留程式內建預設值作為備援
+6.發布與建置輸出時一併包含 base\model\model_config.json
+
+
+20261001 v1.1.3.28
+1.Forecast Common Configuration 增加 retrain_len_seconds 設定
+2.retrain_len_seconds 預設為 1209600 秒，並輸出至 model_config.json
+3.資料選擇預設時間改為上週一 00:00:00 至本週一 00:00:00
+
+
+20260924 v1.1.3.27
 1.送出建模請求後立即每 5 秒輪詢模型狀態，不再等待 Build API 完成才開始查詢
 2.建模視窗顯示資料前處理、M1、M2、GSI、整理輸出等目前處理階段
 3.M1、M2、GSI 訓練期間顯示最新 Epoch，暫時讀取不到狀態時持續重試

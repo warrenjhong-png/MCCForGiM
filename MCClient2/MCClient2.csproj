@@ -777,6 +777,9 @@
     <Content Include="App_Data\AvmModels\base\model\vms_config.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="App_Data\AvmModels\base\model\model_config.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="Scripts\dist\DataCollection.js.map" />
     <Content Include="Scripts\dist\RawDataDownloadGuard.js" />
     <Content Include="Scripts\dist\struct\AvmModuleInfo.js" />

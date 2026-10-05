@@ -142,21 +142,22 @@
                 num_epoches_search: 120,
 
                 // 入廠流量預測共用前處理與微調參數
+                retrain_len_seconds: 1209600,
                 fine_tune_len_seconds: 259200,
-                fine_tune_len_steps: 259200,
+                fine_tune_len_steps: 51840,
                 finetune_cooldown_points: 45,
                 finetune_retrain_times: 3,
                 flow_zero_threshold: 0.5,
                 fine_tune_batch_size_m1: 4096,
                 fine_tune_batch_size_m2: 4096,
-                downsample_seconds: 1,
-                seq_len_steps: 180,
-                forecasting_len_steps: 300,
+                downsample_seconds: 5,
+                seq_len_steps: 36,
+                forecasting_len_steps: 60,
                 patch_len: 30,
-                patch_len_steps: 30,
-                stride_seconds: 1,
-                stride_steps: 1,
-                max_samples: 1000000,
+                patch_len_steps: 6,
+                stride_seconds: 40,
+                stride_steps: 8,
+                max_samples: 1500000,
                 predict_residual: true,
                 weight_decay: 0.03,
                 gradient_clip_norm: 1.0,
@@ -171,50 +172,50 @@
                 // 入廠流量預測模型 m1（Transformer）
                 m1_model_type: "transformer",
                 m1_batch_size: 4096,
-                m1_downsample_seconds: 1,
+                m1_downsample_seconds: 5,
                 m1_forecasting_len: 300,
-                m1_forecasting_len_steps: 300,
+                m1_forecasting_len_steps: 60,
                 m1_hidden_size: 24,
                 m1_lr: 0.0005,
                 m1_max_epochs: 300,
                 m1_num_heads: 1,
                 m1_num_layers: 6,
                 m1_patch_len: 30,
-                m1_patch_len_steps: 30,
+                m1_patch_len_steps: 6,
                 m1_patience: 70,
                 m1_scheduler_patience: 20,
                 m1_seq_len: 180,
-                m1_seq_len_steps: 180,
-                m1_stride_seconds: 1,
-                m1_stride_steps: 1,
+                m1_seq_len_steps: 36,
+                m1_stride_seconds: 40,
+                m1_stride_steps: 8,
                 m1_weight_decay: 0.002,
 
                 // 入廠流量預測模型 m2（LSTM）
                 m2_model_type: "lstm",
                 m2_batch_size: 4096,
-                m2_downsample_seconds: 1,
+                m2_downsample_seconds: 5,
                 m2_forecasting_len: 300,
-                m2_forecasting_len_steps: 300,
+                m2_forecasting_len_steps: 60,
                 m2_hidden_size: 40,
                 m2_lr: 0.005,
                 m2_max_epochs: 300,
                 m2_num_heads: 2,
                 m2_num_layers: 10,
                 m2_patch_len: 30,
-                m2_patch_len_steps: 30,
+                m2_patch_len_steps: 6,
                 m2_patience: 70,
                 m2_scheduler_patience: 40,
                 m2_seq_len: 180,
-                m2_seq_len_steps: 180,
-                m2_stride_seconds: 1,
-                m2_stride_steps: 1,
+                m2_seq_len_steps: 36,
+                m2_stride_seconds: 40,
+                m2_stride_steps: 8,
                 m2_weight_decay: 0.03,
 
-                gsi_param_grid_hidden_size: [64, 128],
+                gsi_param_grid_hidden_size: [32, 64],
                 gsi_param_grid_latend_dim: [3],
                 gsi_param_grid_dropout: [0.1],
-                gsi_param_grid_lr: [0.001],
-                gsi_param_grid_batch_size: [64, 128],
+                gsi_param_grid_lr: [0.01, 0.001],
+                gsi_param_grid_batch_size: [4096],
 
                 //生產排程
                 // NSGAII
@@ -351,7 +352,8 @@
             },
             beforeMount: async function () {
             },
-            mounted: function () {
+            mounted: async function () {
+                await this.loadDefaultModelConfig();
                 this.combinationSelection();
                 taskId = DataCollection.GetGuid();
                 this.taskId = taskId;
@@ -383,10 +385,99 @@
 
             },
             methods: {
-                combinationSelection: function () {
+                loadDefaultModelConfig: async function () {
+                    const response =
+                        await BuildModel.LoadDefaultModelConfig();
 
-                    let start = KendoApi.Date("date-start", this, 2022, 0, 1, "start");
-                    let end = KendoApi.Date("date-end", this, 2022, 11, 31, "end");
+                    if (!response ||
+                        response.success !== true ||
+                        !response.data) {
+                        return;
+                    }
+
+                    const config = response.data;
+                    const applyValue = (
+                        propertyName: string,
+                        value: any) => {
+                        if (propertyName in this &&
+                            value !== undefined &&
+                            value !== null) {
+                            this[propertyName] = value;
+                        }
+                    };
+
+                    Object.keys(config).forEach((key) => {
+                        if (key !== "param_grid" &&
+                            key !== "gsi_param_grid" &&
+                            key !== "m1" &&
+                            key !== "m2") {
+                            applyValue(key, config[key]);
+                        }
+                    });
+
+                    const applyGroup = (
+                        prefix: string,
+                        values: any) => {
+                        if (!values) {
+                            return;
+                        }
+
+                        Object.keys(values).forEach((key) => {
+                            applyValue(
+                                prefix + key,
+                                values[key]);
+                        });
+                    };
+
+                    applyGroup("param_grid_", config.param_grid);
+                    applyGroup("m1_", config.m1);
+                    applyGroup("m2_", config.m2);
+
+                    if (config.gsi_param_grid) {
+                        const gsi = config.gsi_param_grid;
+                        applyValue(
+                            "gsi_param_grid_hidden_size",
+                            gsi.hidden_size);
+                        applyValue(
+                            "gsi_param_grid_latend_dim",
+                            gsi.latent_dim);
+                        applyValue(
+                            "gsi_param_grid_dropout",
+                            gsi.dropout);
+                        applyValue(
+                            "gsi_param_grid_lr",
+                            gsi.lr);
+                        applyValue(
+                            "gsi_param_grid_batch_size",
+                            gsi.BATCH_SIZE);
+                    }
+                },
+                combinationSelection: function () {
+                    const today = new Date();
+                    const daysSinceMonday = (today.getDay() + 6) % 7;
+                    const thisMonday = new Date(
+                        today.getFullYear(),
+                        today.getMonth(),
+                        today.getDate() - daysSinceMonday);
+                    const previousMonday = new Date(
+                        thisMonday.getFullYear(),
+                        thisMonday.getMonth(),
+                        thisMonday.getDate() - 7);
+
+                    let start = KendoApi.Date(
+                        "date-start",
+                        this,
+                        previousMonday.getFullYear(),
+                        previousMonday.getMonth(),
+                        previousMonday.getDate(),
+                        "start");
+                    let end = KendoApi.Date(
+                        "date-end",
+                        this,
+                        thisMonday.getFullYear(),
+                        thisMonday.getMonth(),
+                        thisMonday.getDate(),
+                        "end");
 
                     start.trigger("change");
                     end.trigger("change");
@@ -2003,6 +2094,7 @@
                     return {
                         energy: {
                             finetune_time_max: this.finetune_time_max,
+                            retrain_len_seconds: this.retrain_len_seconds,
                             fine_tune_len_seconds: this.fine_tune_len_seconds,
                             fine_tune_len_steps: this.fine_tune_len_steps,
                             finetune_cooldown_points: this.finetune_cooldown_points,

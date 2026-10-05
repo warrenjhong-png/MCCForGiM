@@ -51,6 +51,7 @@ namespace MCClient2.Models.Structures
     public class EnergyModel
     {
         public int finetune_time_max { get; set; }
+        public int retrain_len_seconds { get; set; }
         public int fine_tune_len_seconds { get; set; }
         public int fine_tune_len_steps { get; set; }
         public int finetune_cooldown_points { get; set; }

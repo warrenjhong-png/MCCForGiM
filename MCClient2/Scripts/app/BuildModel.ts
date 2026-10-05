@@ -332,6 +332,23 @@
         });
     }
 
+    export async function LoadDefaultModelConfig() {
+        try {
+            return await $.ajax({
+                url: Method.generateUrl() + "/Avm/LoadDefaultModelConfig",
+                type: "POST",
+                cache: false,
+                dataType: "json"
+            });
+        }
+        catch (error) {
+            console.warn(
+                "LoadDefaultModelConfig failed; using built-in defaults.",
+                error);
+            return null;
+        }
+    }
+
     export async function SaveFeatureTxt(payload) {
         let result: any = [];
         await $.ajax({

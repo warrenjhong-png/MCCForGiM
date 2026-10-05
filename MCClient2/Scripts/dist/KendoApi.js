@@ -4,7 +4,7 @@ class KendoApi {
         let result = $("." + name).kendoDateTimePicker({
             timeFormat: "HH:mm:ss",
             format: "yyyy/MM/dd HH:mm:ss",
-            value: new Date(),
+            value: new Date(year, month, day, 0, 0, 0),
             change: function () {
                 time = this.value();
                 console.log(time);

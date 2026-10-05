@@ -1059,6 +1059,49 @@ namespace MCClient2.Controllers
         }
 
         [HttpPost]
+        public JsonResult LoadDefaultModelConfig()
+        {
+            try
+            {
+                var configPath = Path.Combine(
+                    AppConstant.AvmModelDirPath,
+                    "base",
+                    "model",
+                    "model_config.json");
+
+                if (!System.IO.File.Exists(configPath))
+                {
+                    return Json(new
+                    {
+                        success = false,
+                        message = "找不到預設 model_config.json"
+                    });
+                }
+
+                var config = JObject.Parse(
+                    System.IO.File.ReadAllText(configPath, Encoding.UTF8));
+
+                return Json(new
+                {
+                    success = true,
+                    data = config
+                });
+            }
+            catch (Exception ex)
+            {
+                AppConstant.Logger.Error(
+                    ex,
+                    "LoadDefaultModelConfig Error");
+
+                return Json(new
+                {
+                    success = false,
+                    message = ex.Message
+                });
+            }
+        }
+
+        [HttpPost]
         public ActionResult SaveModelConfig([FromBody] AvmIIIModule payload)
         {
             try

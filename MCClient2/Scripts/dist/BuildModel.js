@@ -328,6 +328,23 @@ var BuildModel;
         });
     }
     BuildModel_1.SaveModelConfig = SaveModelConfig;
+    function LoadDefaultModelConfig() {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                return yield $.ajax({
+                    url: Method.generateUrl() + "/Avm/LoadDefaultModelConfig",
+                    type: "POST",
+                    cache: false,
+                    dataType: "json"
+                });
+            }
+            catch (error) {
+                console.warn("LoadDefaultModelConfig failed; using built-in defaults.", error);
+                return null;
+            }
+        });
+    }
+    BuildModel_1.LoadDefaultModelConfig = LoadDefaultModelConfig;
     function SaveFeatureTxt(payload) {
         return __awaiter(this, void 0, void 0, function* () {
             let result = [];
